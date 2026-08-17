@@ -34,14 +34,13 @@ export default function StotraCard({ stotra, onPress, variant = 'list' }: Stotra
   const deityEmoji = stotra.deity ? DEITY_ICONS[stotra.deity.slug] || '🙏' : '🙏';
   const accentColor = stotra.deity?.accent_color || SacredColors.gold[500];
 
-  const { isDownloaded, downloading } = useDownloadStore();
-  const downloaded = isDownloaded(stotra.id);
-  const progress = downloading[stotra.id];
+  const downloaded = useDownloadStore(state => !!state.downloadedStotras[stotra.id]);
+  const progress = useDownloadStore(state => state.downloading[stotra.id]);
   const isDownloading = progress !== undefined;
 
-  const { favoriteIds, toggleFavorite } = useFavoritesStore();
+  const toggleFavorite = useFavoritesStore(state => state.toggleFavorite);
+  const isFavorite = useFavoritesStore(state => state.favoriteIds.includes(stotra.id));
   const { user, subscriptionStatus } = useAuthStore();
-  const isFavorite = favoriteIds.includes(stotra.id);
 
   const handleDownloadPress = () => {
     // TEMPORARILY DISABLED PAYWALL FOR TESTING

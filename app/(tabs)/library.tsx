@@ -101,15 +101,17 @@ export default function LibraryScreen() {
 
             {/* Preset playlists */}
             {[
-              { name: 'Morning Sandhya', emoji: '🌅', count: 0 },
-              { name: 'Evening Prayers', emoji: '🌇', count: 0 },
-              { name: 'Bedtime Mantras', emoji: '🌙', count: 0 },
+              { name: 'Morning Sandhya', icon: 'partly-sunny', count: 0 },
+              { name: 'Evening Prayers', icon: 'moon', count: 0 },
+              { name: 'Bedtime Mantras', icon: 'star', count: 0 },
             ].map((playlist, i) => (
               <TouchableOpacity
                 key={i}
                 style={[styles.playlistItem, { backgroundColor: theme.card, borderColor: theme.border }]}
               >
-                <Text style={styles.playlistEmoji}>{playlist.emoji}</Text>
+                <View style={styles.playlistIconContainer}>
+                  <Ionicons name={playlist.icon as any} size={24} color={SacredColors.gold[500]} />
+                </View>
                 <View style={styles.playlistInfo}>
                   <Text style={[styles.playlistName, { color: theme.text }]}>{playlist.name}</Text>
                   <Text style={[styles.playlistCount, { color: theme.textTertiary }]}>
@@ -146,7 +148,7 @@ export default function LibraryScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>📚 Library</Text>
+          <Text style={[styles.title, { color: theme.text }]}>Library</Text>
           <Text style={[styles.subtitle, { color: theme.textTertiary }]}>
             Your personal sacred collection
           </Text>
@@ -312,8 +314,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: Spacing.md,
   },
-  playlistEmoji: {
-    fontSize: 28,
+  playlistIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    backgroundColor: 'rgba(212,175,55,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   playlistInfo: {
     flex: 1,

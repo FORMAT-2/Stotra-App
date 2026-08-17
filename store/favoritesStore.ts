@@ -41,9 +41,15 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
   },
 
   toggleFavorite: async (stotraId: string) => {
-    const { user } = useAuthStore.getState();
+    console.log("toggleFavorite called with id:", stotraId);
+    console.log("authStore:", useAuthStore);
+    console.log("authStore.getState:", useAuthStore ? useAuthStore.getState : 'undefined');
+
+    const authState = useAuthStore.getState();
+    const user = authState ? authState.user : null;
+    
     if (!user) {
-      // Return false to indicate it failed (so UI can prompt login)
+      console.log("User is null, cannot toggle favorite");
       return false;
     }
 

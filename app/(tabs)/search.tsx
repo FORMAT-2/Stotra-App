@@ -1,40 +1,39 @@
 // ============================================================
-// Search Screen — Real-time search with deity & duration filters
+// Search Screen — Minimalist, YouTube Music style search
 // ============================================================
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
   TextInput,
-  ScrollView,
   TouchableOpacity,
   StyleSheet,
   Platform,
+  FlatList,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSacredTheme } from '../../contexts/ThemeContext';
 import { SacredColors, Spacing, BorderRadius, FontSizes } from '../../constants/Theme';
 import { audioService } from '../../services/AudioService';
-import DeityCarousel from '../../components/DeityCarousel';
 import StotraCard from '../../components/StotraCard';
 import SectionHeader from '../../components/SectionHeader';
-import { usePlayerStore } from '../../store/playerStore';
 import { useDataStore } from '../../store/dataStore';
-import {
-  formatDuration,
-} from '../../data/mockData';
-import { DURATION_FILTERS } from '../../data/types';
+import { useSearchStore } from '../../store/searchStore';
 
 export default function SearchScreen() {
   const { theme } = useSacredTheme();
-  const setPlaying = usePlayerStore(s => s.setPlaying);
-  const { deities, stotras, categories } = useDataStore();
+  const { stotras } = useDataStore();
 
-  const [query, setQuery] = useState('');
-  const [selectedDeity, setSelectedDeity] = useState<string | null>(null);
-  const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const {
+    query,
+    setQuery,
+    recentSearches,
+    addRecentSearch,
+    removeRecentSearch,
+    clearRecentSearches,
+  } = useSearchStore();
 
   const filteredStotras = useMemo(() => {
     let results = [...stotras];
@@ -53,193 +52,133 @@ export default function SearchScreen() {
       );
     }
 
-    // Deity filter
-    if (selectedDeity) {
-      results = results.filter(s => s.deity?.slug === selectedDeity);
-    }
-
-    // Duration filter
-    if (selectedDuration !== null) {
-      const filter = DURATION_FILTERS[selectedDuration];
-      results = results.filter(s =>
-        s.duration_seconds >= filter.min && s.duration_seconds < filter.max
-      );
-    }
-
-    // Category filter
-    if (selectedCategory) {
-      results = results.filter(s => s.category?.slug === selectedCategory);
-    }
-
     return results;
-  }, [query, selectedDeity, selectedDuration, selectedCategory, stotras]);
+  }, [query, stotras]);
 
   const handleStotraPress = async (stotra: typeof stotras[0]) => {
+    // Add to recent search history
+    if (query.trim()) {
+      addRecentSearch(query);
+    } else {
+      addRecentSearch(stotra.title_english);
+    }
+
     const { dataService } = await import('../../services/DataService');
     const verses = await dataService.getVersesForStotra(stotra.id);
     audioService.playStotra(stotra, verses);
   };
 
-  const clearFilters = () => {
-    setSelectedDeity(null);
-    setSelectedDuration(null);
-    setSelectedCategory(null);
-    setQuery('');
+  const handleSearchSubmit = () => {
+    if (query.trim()) {
+      addRecentSearch(query);
+    }
   };
 
-  const hasFilters = selectedDeity || selectedDuration !== null || selectedCategory || query.trim();
+  const isSearching = query.trim().length > 0;
+
+  const renderHeader = () => (
+    <View style={styles.headerContainer}>
+      <View style={[styles.searchBar, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <Ionicons name="search" size={20} color={theme.textTertiary} />
+        <TextInput
+          style={[styles.searchInput, { color: theme.text }]}
+          placeholder="Search stotras, mantras, deities..."
+          placeholderTextColor={theme.textTertiary}
+          value={query}
+          onChangeText={setQuery}
+          returnKeyType="search"
+          autoCorrect={false}
+          autoFocus={true}
+          onSubmitEditing={handleSearchSubmit}
+        />
+        {query.length > 0 && (
+          <TouchableOpacity onPress={() => setQuery('')}>
+            <Ionicons name="close-circle" size={18} color={theme.textTertiary} />
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+
+  const renderRecentSearches = () => {
+    if (recentSearches.length === 0) {
+      return (
+        <View style={styles.emptyState}>
+          <Ionicons name="search" size={48} color={theme.textMuted} />
+          <Text style={[styles.emptyTitle, { color: theme.textSecondary, marginTop: Spacing.md }]}>
+            Search for Stotras
+          </Text>
+          <Text style={[styles.emptySubtitle, { color: theme.textTertiary }]}>
+            Find your favorite chants, deities, or meanings
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.recentContainer}>
+        <View style={styles.recentHeader}>
+          <Text style={[styles.recentTitle, { color: theme.text }]}>Recent searches</Text>
+          <TouchableOpacity onPress={clearRecentSearches}>
+            <Text style={[styles.clearText, { color: theme.accent }]}>Clear all</Text>
+          </TouchableOpacity>
+        </View>
+
+        {recentSearches.map((searchQuery, index) => (
+          <TouchableOpacity
+            key={`recent-${index}`}
+            style={[styles.recentItem, { borderBottomColor: theme.border }]}
+            onPress={() => setQuery(searchQuery)}
+          >
+            <Ionicons name="time-outline" size={20} color={theme.textSecondary} style={{ marginRight: Spacing.md }} />
+            <Text style={[styles.recentText, { color: theme.text }]}>{searchQuery}</Text>
+            <TouchableOpacity onPress={() => removeRecentSearch(searchQuery)} style={styles.removeRecent}>
+              <Ionicons name="close" size={18} color={theme.textTertiary} />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>Search</Text>
-          <Text style={[styles.subtitle, { color: theme.textTertiary }]}>
-            Find mantras, stotras, aartis & more
-          </Text>
-        </View>
+      {renderHeader()}
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={[styles.searchBar, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Ionicons name="search" size={18} color={theme.textTertiary} />
-            <TextInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder='Search "Hanuman Chalisa" or "हनुमान"...'
-              placeholderTextColor={theme.textMuted}
-              style={[styles.searchInput, { color: theme.text }]}
-              returnKeyType="search"
-              autoCorrect={false}
-            />
-            {query.length > 0 && (
-              <TouchableOpacity onPress={() => setQuery('')}>
-                <Ionicons name="close-circle" size={18} color={theme.textTertiary} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* Deity Filter */}
-        <SectionHeader title="By Deity" />
-        <DeityCarousel
-          deities={deities}
-          selectedDeity={selectedDeity}
-          onDeityPress={(d) => setSelectedDeity(selectedDeity === d.slug ? null : d.slug)}
-        />
-
-        {/* Duration Filter */}
-        <SectionHeader title="By Duration" />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScroll}
-        >
-          {DURATION_FILTERS.map((filter, index) => {
-            const isActive = selectedDuration === index;
-            return (
-              <TouchableOpacity
-                key={index}
-                onPress={() => setSelectedDuration(isActive ? null : index)}
-                style={[
-                  styles.filterChip,
-                  {
-                    backgroundColor: isActive ? SacredColors.gold[500] : theme.surface,
-                    borderColor: isActive ? SacredColors.gold[500] : theme.border,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name="time-outline"
-                  size={13}
-                  color={isActive ? '#FFF' : theme.textSecondary}
-                />
-                <Text style={[
-                  styles.filterText,
-                  { color: isActive ? '#FFF' : theme.textSecondary },
-                ]}>
-                  {filter.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+      {!isSearching ? (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+          {renderRecentSearches()}
         </ScrollView>
-
-        {/* Category Filter */}
-        <SectionHeader title="By Type" />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScroll}
-        >
-          {categories.map((cat) => {
-            const isActive = selectedCategory === cat.slug;
-            return (
-              <TouchableOpacity
-                key={cat.id}
-                onPress={() => setSelectedCategory(isActive ? null : cat.slug)}
-                style={[
-                  styles.filterChip,
-                  {
-                    backgroundColor: isActive ? SacredColors.gold[500] : theme.surface,
-                    borderColor: isActive ? SacredColors.gold[500] : theme.border,
-                  },
-                ]}
-              >
-                <Text style={[
-                  styles.filterText,
-                  { color: isActive ? '#FFF' : theme.textSecondary },
-                ]}>
-                  {cat.title_english}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        {/* Clear Filters */}
-        {hasFilters && (
-          <View style={styles.clearContainer}>
-            <TouchableOpacity onPress={clearFilters} style={styles.clearButton}>
-              <Ionicons name="close" size={14} color={SacredColors.gold[500]} />
-              <Text style={[styles.clearText, { color: SacredColors.gold[500] }]}>
-                Clear all filters
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Results */}
-        <SectionHeader
-          title="Results"
-          subtitle={`${filteredStotras.length} stotra${filteredStotras.length !== 1 ? 's' : ''} found`}
-        />
-        <View style={styles.results}>
-          {filteredStotras.length > 0 ? (
-            filteredStotras.map((stotra) => (
+      ) : (
+        <FlatList
+          data={filteredStotras}
+          keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
+          renderItem={({ item }) => (
+            <View style={{ paddingHorizontal: Spacing.lg }}>
               <StotraCard
-                key={stotra.id}
-                stotra={stotra}
+                stotra={item}
                 variant="list"
                 onPress={handleStotraPress}
               />
-            ))
-          ) : (
+            </View>
+          )}
+          ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>🔍</Text>
-              <Text style={[styles.emptyTitle, { color: theme.textSecondary }]}>
+              <Ionicons name="search" size={48} color={theme.textMuted} />
+              <Text style={[styles.emptyTitle, { color: theme.textSecondary, marginTop: Spacing.md }]}>
                 No stotras found
               </Text>
               <Text style={[styles.emptySubtitle, { color: theme.textTertiary }]}>
-                Try a different search or adjust your filters
+                Try a different search
               </Text>
             </View>
-          )}
-        </View>
-
-        <View style={{ height: 120 }} />
-      </ScrollView>
+          }
+          ListFooterComponent={<View style={{ height: 120 }} />}
+        />
+      )}
     </View>
   );
 }
@@ -248,26 +187,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContent: {
-    paddingBottom: 20,
-  },
-  header: {
+  headerContainer: {
     paddingTop: Platform.OS === 'ios' ? 60 : 48,
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.sm,
-  },
-  title: {
-    fontSize: FontSizes['3xl'],
-    fontWeight: '800',
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: FontSizes.sm,
-    marginTop: 2,
-  },
-  searchContainer: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
+    paddingBottom: Spacing.md,
   },
   searchBar: {
     flexDirection: 'row',
@@ -283,49 +206,14 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.md,
     padding: 0,
   },
-  filterScroll: {
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.sm,
-  },
-  filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-  },
-  filterText: {
-    fontSize: FontSizes.sm,
-    fontWeight: '500',
-  },
-  clearContainer: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-  },
-  clearButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    alignSelf: 'flex-start',
-  },
-  clearText: {
-    fontSize: FontSizes.sm,
-    fontWeight: '600',
-  },
-  results: {
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.sm,
+  scrollContent: {
+    paddingBottom: 20,
+    paddingTop: Spacing.sm,
   },
   emptyState: {
     alignItems: 'center',
     paddingVertical: Spacing['5xl'],
     gap: Spacing.sm,
-  },
-  emptyEmoji: {
-    fontSize: 48,
-    marginBottom: Spacing.sm,
   },
   emptyTitle: {
     fontSize: FontSizes.lg,
@@ -334,5 +222,37 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     fontSize: FontSizes.sm,
     textAlign: 'center',
+    maxWidth: 240,
+  },
+  recentContainer: {
+    paddingHorizontal: Spacing.lg,
+  },
+  recentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    marginBottom: Spacing.xs,
+  },
+  recentTitle: {
+    fontSize: FontSizes.md,
+    fontWeight: '600',
+  },
+  clearText: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+  },
+  recentItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  recentText: {
+    flex: 1,
+    fontSize: FontSizes.md,
+  },
+  removeRecent: {
+    padding: Spacing.xs,
   },
 });

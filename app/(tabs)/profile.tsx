@@ -9,6 +9,10 @@ import {
   Switch,
   Modal,
   TouchableWithoutFeedback,
+  Share,
+  Linking,
+  Alert,
+  Image,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -46,10 +50,28 @@ export default function ProfileScreen() {
     setModalVisible(true);
   };
 
-  const handleFeatureNotReady = () => {
-    import('react-native').then(({ Alert }) => {
-      Alert.alert("Coming Soon", "This feature will be available in a future update.");
-    });
+  const handleRateApp = async () => {
+    // In a real app with expo-store-review, we'd use StoreReview.requestReview()
+    // For now, we'll simulate it with an alert since the app isn't published.
+    Alert.alert(
+      "Rate Divine Stotra",
+      "If you enjoy using Divine Stotra, would you mind taking a moment to rate it? It helps us spread the divine knowledge.",
+      [
+        { text: "Remind Me Later", style: "cancel" },
+        { text: "Rate Now", onPress: () => Linking.openURL('https://play.google.com/store/apps/details?id=com.divinestotra.app').catch(() => {}) }
+      ]
+    );
+  };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: 'Join me in chanting divine mantras and stotras with the Divine Stotra app! Download it now: https://divinestotra.app',
+        title: 'Divine Stotra App'
+      });
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const handleAuthPress = async () => {
@@ -176,21 +198,21 @@ export default function ProfileScreen() {
           label: 'About Divine Stotra',
           subtitle: 'Version 1.0.0',
           type: 'nav' as const,
-          onPress: handleFeatureNotReady,
+          onPress: () => router.push('/about'),
         },
         {
           icon: 'heart',
           label: 'Rate the App',
           subtitle: 'Support the divine mission',
           type: 'nav' as const,
-          onPress: handleFeatureNotReady,
+          onPress: handleRateApp,
         },
         {
           icon: 'share-social',
           label: 'Share with Friends',
           subtitle: 'Spread the sacred knowledge',
           type: 'nav' as const,
-          onPress: handleFeatureNotReady,
+          onPress: handleShare,
         },
       ],
     },
@@ -213,24 +235,37 @@ export default function ProfileScreen() {
             style={[styles.userCard, { borderColor: `${SacredColors.gold[500]}20` }]}
           >
             <View style={styles.avatarContainer}>
-              <LinearGradient
-                colors={[SacredColors.gold[500], SacredColors.saffron[600]]}
-                style={styles.avatar}
-              >
-                <Text style={styles.avatarEmoji}>🙏</Text>
-              </LinearGradient>
+              {user?.user_metadata?.avatar_url ? (
+                <Image 
+                  source={{ uri: user.user_metadata.avatar_url }} 
+                  style={styles.avatarImage} 
+                />
+              ) : (
+                <LinearGradient
+                  colors={[SacredColors.gold[500], SacredColors.saffron[600]]}
+                  style={styles.avatar}
+                >
+                  <Text style={styles.avatarEmoji}>🙏</Text>
+                </LinearGradient>
+              )}
             </View>
             <View style={styles.userInfo}>
-              <Text style={[styles.userName, { color: theme.text }]}>
-                {user ? user.email?.split('@')[0] || 'Devotee' : 'Devotee'}
+              <Text style={[styles.userName, { color: theme.text }]} numberOfLines={1}>
+                {user ? (user.user_metadata?.display_name || user.email?.split('@')[0] || 'Devotee') : 'Devotee'}
               </Text>
-              <Text style={[styles.userSubtitle, { color: theme.textTertiary }]}>
+              <Text style={[styles.userSubtitle, { color: theme.textTertiary }]} numberOfLines={1}>
                 {user ? user.email : 'Guest Mode · Tap to sign in'}
               </Text>
+              {user && (
+                <TouchableOpacity onPress={() => router.push('/edit-profile')} style={styles.editProfileBtn}>
+                  <Ionicons name="pencil" size={14} color={SacredColors.gold[500]} />
+                  <Text style={[styles.editProfileText, { color: SacredColors.gold[500] }]}>Edit Profile</Text>
+                </TouchableOpacity>
+              )}
             </View>
             <TouchableOpacity 
               onPress={handleAuthPress}
-              style={[styles.signInButton, { borderColor: SacredColors.gold[500] }]}
+              style={[styles.signInButton, { borderColor: SacredColors.gold[500], alignSelf: 'center' }]}
             >
               <Text style={[styles.signInText, { color: SacredColors.gold[500] }]}>
                 {user ? 'Sign Out' : 'Sign In'}
@@ -393,13 +428,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: Spacing.md,
   },
-  avatarContainer: {},
-  avatar: {
+  avatarContainer: {
     width: 52,
     height: 52,
     borderRadius: 26,
+    overflow: 'hidden',
+  },
+  avatar: {
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 32,
   },
   avatarEmoji: {
     fontSize: 24,
@@ -413,7 +457,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   userSubtitle: {
+    fontSize: FontSizes.sm,
+    marginTop: 2,
+  },
+  editProfileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    gap: 4,
+  },
+  editProfileText: {
     fontSize: FontSizes.xs,
+    fontWeight: '600',
   },
   signInButton: {
     paddingHorizontal: Spacing.md,

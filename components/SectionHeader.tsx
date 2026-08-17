@@ -13,15 +13,19 @@ interface SectionHeaderProps {
   subtitle?: string;
   actionText?: string;
   onAction?: () => void;
+  icon?: string;
 }
 
-export default function SectionHeader({ title, subtitle, actionText, onAction }: SectionHeaderProps) {
+export default function SectionHeader({ title, subtitle, actionText, onAction, icon }: SectionHeaderProps) {
   const { theme } = useSacredTheme();
 
   return (
     <View style={styles.container}>
       <View style={styles.titleContainer}>
-        <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
+        <View style={styles.titleRow}>
+          {icon && <Ionicons name={icon as any} size={20} color={theme.accent} style={{ marginRight: 6 }} />}
+          <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
+        </View>
         {subtitle && (
           <Text style={[styles.subtitle, { color: theme.textTertiary }]}>{subtitle}</Text>
         )}
@@ -48,6 +52,10 @@ const styles = StyleSheet.create({
   titleContainer: {
     flex: 1,
     gap: 2,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   title: {
     fontSize: FontSizes.xl,

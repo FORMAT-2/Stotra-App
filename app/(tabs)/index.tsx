@@ -2,7 +2,7 @@
 // Home Screen — Daily Darshan, Deity Carousel, Featured Stotras
 // ============================================================
 
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -28,16 +28,32 @@ import {
 } from '../../data/mockData';
 import { useDataStore } from '../../store/dataStore';
 import { useAuthStore } from '../../store/authStore';
+import { useSearchStore } from '../../store/searchStore';
 import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {
   const { theme, isDark } = useSacredTheme();
   
   const { deities, stotras, categories, isLoading, fetchData } = useDataStore();
+  const { setSelectedDeity, setSelectedCategory, clearFilters } = useSearchStore();
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const [selectedDeity, setHomeSelectedDeity] = useState<string | null>(null);
+  const [selectedCategory, setHomeSelectedCategory] = useState<string | null>(null);
+
+  const homeFilteredStotras = useMemo(() => {
+    let results = [...stotras];
+    if (selectedDeity) {
+      results = results.filter(s => s.deity?.slug === selectedDeity);
+    }
+    if (selectedCategory) {
+      results = results.filter(s => s.category?.slug === selectedCategory);
+    }
+    return results;
+  }, [stotras, selectedDeity, selectedCategory]);
 
 
   // If stotras exist, use them for the daily darshan. Otherwise use fallback mock getter.
@@ -161,11 +177,34 @@ export default function HomeScreen() {
         )}
 
         {/* Deity Carousel */}
-        <SectionHeader title="Deities" subtitle="Browse by divine manifestation" actionText="See All" onAction={() => {}} />
-        <DeityCarousel deities={deities} onDeityPress={() => {}} />
+        <SectionHeader 
+          title="Deities" 
+          subtitle="Browse by divine manifestation" 
+          actionText={selectedDeity ? "Clear" : undefined} 
+          onAction={() => {
+            if (selectedDeity) {
+              setHomeSelectedDeity(null);
+            }
+          }} 
+        />
+        <DeityCarousel 
+          deities={deities} 
+          selectedDeity={selectedDeity}
+          onDeityPress={(deity) => {
+            if (selectedDeity === deity.slug) {
+              setHomeSelectedDeity(null);
+            } else {
+              setHomeSelectedDeity(deity.slug);
+            }
+          }} 
+        />
 
         {/* Featured Stotras */}
-        <SectionHeader title="✨ Featured" subtitle="Most sacred hymns" actionText="See All" onAction={() => {}} />
+        <SectionHeader 
+          title="Featured" 
+          icon="sparkles"
+          subtitle="Most sacred hymns" 
+        />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -182,27 +221,51 @@ export default function HomeScreen() {
         </ScrollView>
 
         {/* Content Type Chips */}
-        <SectionHeader title="Browse by Type" subtitle="Mantras, Stotras, Aartis & more" />
+        <SectionHeader 
+          title="Browse by Type" 
+          subtitle="Mantras, Stotras, Aartis & more" 
+          actionText={selectedCategory ? "Clear" : undefined}
+          onAction={() => setHomeSelectedCategory(null)}
+        />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.chipsScroll}
         >
-          {categories.map((cat, index) => (
-            <TouchableOpacity
-              key={cat.id || cat.slug || `cat-${index}`}
-              style={[styles.chip, { backgroundColor: theme.surface, borderColor: theme.border }]}
-            >
-              <Text style={[styles.chipText, { color: theme.text }]}>{cat.title_english}</Text>
-              <Text style={[styles.chipHindi, { color: theme.textTertiary }]}>{cat.title_hindi}</Text>
-            </TouchableOpacity>
-          ))}
+          {categories.map((cat, index) => {
+            const isSelected = selectedCategory === cat.slug;
+            return (
+              <TouchableOpacity
+                key={cat.id || cat.slug || `cat-${index}`}
+                style={[
+                  styles.chip, 
+                  { 
+                    backgroundColor: isSelected ? theme.primary : theme.surface, 
+                    borderColor: isSelected ? theme.primary : theme.border 
+                  }
+                ]}
+                onPress={() => {
+                  if (selectedCategory === cat.slug) {
+                    setHomeSelectedCategory(null);
+                  } else {
+                    setHomeSelectedCategory(cat.slug);
+                  }
+                }}
+              >
+                <Text style={[styles.chipText, { color: isSelected ? '#FFF' : theme.text }]}>{cat.title_english}</Text>
+                <Text style={[styles.chipHindi, { color: isSelected ? 'rgba(255,255,255,0.8)' : theme.textTertiary }]}>{cat.title_hindi}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
 
         {/* All Stotras */}
-        <SectionHeader title="All Stotras" subtitle={`${stotras.length} sacred chants`} />
+        <SectionHeader 
+          title={selectedDeity || selectedCategory ? "Filtered Stotras" : "All Stotras"} 
+          subtitle={selectedDeity || selectedCategory ? `${homeFilteredStotras.length} matches found` : `${stotras.length} sacred chants`} 
+        />
         <View style={styles.listContainer}>
-          {stotras.slice(0, 5).map((stotra, index) => (
+          {homeFilteredStotras.slice(0, selectedDeity || selectedCategory ? 20 : 5).map((stotra, index) => (
             <StotraCard
               key={stotra.id || stotra.slug || `list-${index}`}
               stotra={stotra}
@@ -210,6 +273,12 @@ export default function HomeScreen() {
               onPress={handleStotraPress}
             />
           ))}
+          
+          {(selectedDeity || selectedCategory) && homeFilteredStotras.length === 0 && (
+            <Text style={{ textAlign: 'center', color: theme.textSecondary, marginTop: 20 }}>
+              No stotras found for this filter.
+            </Text>
+          )}
         </View>
           </>
         )}

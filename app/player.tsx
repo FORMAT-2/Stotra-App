@@ -54,6 +54,7 @@ export default function PlayerScreen() {
     setLoopMode,
   } = usePlayerStore();
 
+  const { favoriteIds, toggleFavorite } = useFavoritesStore();
   const [showSleepTimer, setShowSleepTimer] = useState(false);
 
   if (!currentStotra) {
@@ -66,6 +67,8 @@ export default function PlayerScreen() {
     );
   }
 
+  const isFavorite = favoriteIds.includes(currentStotra.id);
+
   const deityEmoji = currentStotra.deity ? DEITY_ICONS[currentStotra.deity.slug] || '🪔' : '🪔';
   const accentColor = currentStotra.deity?.accent_color || SacredColors.gold[500];
   const progress = durationMs > 0 ? positionMs / durationMs : 0;
@@ -73,9 +76,6 @@ export default function PlayerScreen() {
 
   const displayPosition = Math.floor(positionMs / 1000);
   const displayDuration = Math.floor(durationMs > 0 ? durationMs / 1000 : totalDuration);
-
-  const { favoriteIds, toggleFavorite } = useFavoritesStore();
-  const isFavorite = favoriteIds.includes(currentStotra.id);
 
   const cycleLoop = () => {
     const currentIdx = LOOP_OPTIONS.indexOf(loopMode);
@@ -376,7 +376,7 @@ export default function PlayerScreen() {
       {/* Bottom Actions */}
       <View style={styles.bottomActions}>
         <TouchableOpacity style={styles.bottomAction} onPress={() => toggleFavorite(currentStotra.id)}>
-          <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={22} color={isFavorite ? SacredColors.rose[500] : theme.textSecondary} />
+          <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={22} color={isFavorite ? SacredColors.lotus[500] : theme.textSecondary} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.bottomAction}>
           <Ionicons name="download-outline" size={22} color={theme.textSecondary} />
