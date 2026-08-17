@@ -15,6 +15,8 @@ export {
   ErrorBoundary,
 } from 'expo-router';
 
+import { useRouter } from 'expo-router';
+
 export const unstable_settings = {
   initialRouteName: '(tabs)',
 };
@@ -48,7 +50,11 @@ function RootLayoutNav() {
   );
 }
 
+import { audioService } from '../services/AudioService';
+import { useDataStore } from '../store/dataStore';
+
 export default function RootLayout() {
+  const router = useRouter();
   const [loaded, error] = useFonts({
     'SpaceMono': require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
@@ -60,6 +66,24 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
+      audioService.init();
+      useDataStore.getState().fetchData();
+      
+      const { useAuthStore } = require('../store/authStore');
+      const { useFavoritesStore } = require('../store/favoritesStore');
+      
+      useAuthStore.getState().initialize().then(() => {
+        useFavoritesStore.getState().fetchFavorites();
+        
+        // Auth Guard: If not logged in, redirect to auth
+        const state = useAuthStore.getState();
+        if (!state.user) {
+          router.replace('/auth');
+        } else if (state.subscriptionStatus !== 'active') {
+          // If logged in but not active, show paywall on startup
+          router.replace('/paywall');
+        }
+      });
     }
   }, [loaded]);
 

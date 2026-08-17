@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useSacredTheme } from '../contexts/ThemeContext';
 import { usePlayerStore } from '../store/playerStore';
+import { audioService } from '../services/AudioService';
 import { SacredColors, BorderRadius, Spacing, FontSizes } from '../constants/Theme';
 import { formatDuration } from '../data/mockData';
 
@@ -26,7 +27,6 @@ export default function MiniPlayer() {
     currentStotra,
     isPlaying,
     showMiniPlayer,
-    togglePlay,
     positionMs,
     durationMs,
   } = usePlayerStore();
@@ -75,7 +75,11 @@ export default function MiniPlayer() {
         <TouchableOpacity
           onPress={(e) => {
             e.stopPropagation?.();
-            togglePlay();
+            if (isPlaying) {
+              audioService.pause();
+            } else {
+              audioService.play();
+            }
           }}
           style={styles.playButton}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -90,6 +94,7 @@ export default function MiniPlayer() {
         <TouchableOpacity
           onPress={(e) => {
             e.stopPropagation?.();
+            audioService.pause();
             usePlayerStore.getState().reset();
           }}
           style={styles.closeButton}

@@ -4,10 +4,9 @@
 
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, StyleSheet, Platform } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { View, Platform } from 'react-native';
+
 import { useSacredTheme } from '../../contexts/ThemeContext';
-import { Spacing } from '../../constants/Theme';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import MiniPlayer from '../../components/MiniPlayer';
 

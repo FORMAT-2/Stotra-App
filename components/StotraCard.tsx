@@ -15,6 +15,12 @@ import { useSacredTheme } from '../contexts/ThemeContext';
 import { SacredColors, Spacing, BorderRadius, FontSizes } from '../constants/Theme';
 import { DEITY_ICONS, formatDuration } from '../data/mockData';
 import type { Stotra } from '../data/types';
+import { ActivityIndicator } from 'react-native';
+import { useDownloadStore } from '../store/downloadStore';
+import { downloadService } from '../services/DownloadService';
+import { useFavoritesStore } from '../store/favoritesStore';
+import { useAuthStore } from '../store/authStore';
+import { useRouter } from 'expo-router';
 
 interface StotraCardProps {
   stotra: Stotra;
@@ -24,14 +30,52 @@ interface StotraCardProps {
 
 export default function StotraCard({ stotra, onPress, variant = 'list' }: StotraCardProps) {
   const { theme } = useSacredTheme();
+  const router = useRouter();
   const deityEmoji = stotra.deity ? DEITY_ICONS[stotra.deity.slug] || '🙏' : '🙏';
   const accentColor = stotra.deity?.accent_color || SacredColors.gold[500];
+
+  const { isDownloaded, downloading } = useDownloadStore();
+  const downloaded = isDownloaded(stotra.id);
+  const progress = downloading[stotra.id];
+  const isDownloading = progress !== undefined;
+
+  const { favoriteIds, toggleFavorite } = useFavoritesStore();
+  const { user, subscriptionStatus } = useAuthStore();
+  const isFavorite = favoriteIds.includes(stotra.id);
+
+  const handleDownloadPress = () => {
+    // TEMPORARILY DISABLED PAYWALL FOR TESTING
+    // if (subscriptionStatus !== 'active') {
+    //   router.push('/paywall');
+    //   return;
+    // }
+    if (downloaded) {
+      downloadService.removeDownloadedStotra(stotra.id);
+    } else if (isDownloading) {
+      downloadService.cancelDownload(stotra.id);
+    } else {
+      downloadService.downloadStotra(stotra.id, stotra.audio_url);
+    }
+  };
+
+  const handleFavoritePress = async () => {
+    await toggleFavorite(stotra.id);
+  };
+
+  const handlePlayPress = () => {
+    // TEMPORARILY DISABLED PAYWALL FOR TESTING
+    // if (subscriptionStatus !== 'active') {
+    //   router.push('/paywall');
+    //   return;
+    // }
+    onPress?.(stotra);
+  };
 
   if (variant === 'featured') {
     return (
       <TouchableOpacity
         activeOpacity={0.8}
-        onPress={() => onPress?.(stotra)}
+        onPress={handlePlayPress}
         style={styles.featuredContainer}
       >
         <LinearGradient
@@ -81,7 +125,7 @@ export default function StotraCard({ stotra, onPress, variant = 'list' }: Stotra
     return (
       <TouchableOpacity
         activeOpacity={0.7}
-        onPress={() => onPress?.(stotra)}
+        onPress={handlePlayPress}
         style={[styles.compactCard, { backgroundColor: theme.card, borderColor: theme.border }]}
       >
         <View style={[styles.compactCover, { backgroundColor: `${accentColor}20` }]}>
@@ -95,6 +139,17 @@ export default function StotraCard({ stotra, onPress, variant = 'list' }: Stotra
             {formatDuration(stotra.duration_seconds)}
           </Text>
         </View>
+        <TouchableOpacity onPress={handleDownloadPress} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ marginRight: 8 }}>
+          {isDownloading ? (
+            <ActivityIndicator size="small" color={accentColor} />
+          ) : (
+            <Ionicons
+              name={downloaded ? 'checkmark-circle' : 'cloud-download-outline'}
+              size={24}
+              color={downloaded ? SacredColors.gold[500] : theme.textTertiary}
+            />
+          )}
+        </TouchableOpacity>
         <Ionicons name="play-circle" size={28} color={accentColor} />
       </TouchableOpacity>
     );
@@ -104,7 +159,7 @@ export default function StotraCard({ stotra, onPress, variant = 'list' }: Stotra
   return (
     <TouchableOpacity
       activeOpacity={0.7}
-      onPress={() => onPress?.(stotra)}
+      onPress={handlePlayPress}
       style={[styles.listCard, { backgroundColor: theme.card, borderColor: theme.border }]}
     >
       {/* Cover art */}
@@ -144,13 +199,36 @@ export default function StotraCard({ stotra, onPress, variant = 'list' }: Stotra
         </View>
       </View>
 
-      {/* Play button */}
-      <TouchableOpacity
-        onPress={() => onPress?.(stotra)}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-      >
-        <Ionicons name="play-circle" size={36} color={accentColor} />
-      </TouchableOpacity>
+      {/* Actions */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+        <TouchableOpacity onPress={handleFavoritePress} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <Ionicons
+            name={isFavorite ? 'heart' : 'heart-outline'}
+            size={24}
+            color={isFavorite ? SacredColors.lotus[500] : theme.textTertiary}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={handleDownloadPress} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          {isDownloading ? (
+            <ActivityIndicator size="small" color={accentColor} />
+          ) : (
+            <Ionicons
+              name={downloaded ? 'checkmark-circle' : 'cloud-download-outline'}
+              size={24}
+              color={downloaded ? SacredColors.gold[500] : theme.textTertiary}
+            />
+          )}
+        </TouchableOpacity>
+
+        {/* Play button */}
+        <TouchableOpacity
+          onPress={handlePlayPress}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Ionicons name="play-circle" size={36} color={accentColor} />
+        </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   );
 }

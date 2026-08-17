@@ -45,6 +45,7 @@ interface PlayerState {
   setSleepTimer: (minutes: number | null) => void;
   setActiveVerseIndex: (index: number) => void;
   updateActiveVerse: (positionMs: number) => void;
+  setCurrentLoop: (loop: number) => void;
   togglePlay: () => void;
   reset: () => void;
 }
@@ -80,15 +81,39 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   showMiniPlayer: false,
 
-  setStotra: (stotra, verses = []) => set({
-    currentStotra: stotra,
-    currentVerses: verses.sort((a, b) => a.verse_number - b.verse_number),
-    activeVerseIndex: -1,
-    positionMs: 0,
-    isPlaying: false,
-    showMiniPlayer: true,
-    currentLoop: 0,
-  }),
+  setStotra: (stotra, verses = []) => {
+    // Dynamically require to avoid circular dependencies if any
+    const { useSettingsStore } = require('./settingsStore');
+    const settings = useSettingsStore.getState();
+
+    // The player's LoopMode type might differ slightly from the settings (e.g. '1x' vs '1')
+    let mappedLoopMode: LoopMode = '1x';
+    if (settings.defaultLoopMode === '1') mappedLoopMode = '1x';
+    else if (settings.defaultLoopMode === '11') mappedLoopMode = '11x';
+    else if (settings.defaultLoopMode === '108') mappedLoopMode = '108x';
+    else if (settings.defaultLoopMode === 'infinite') mappedLoopMode = 'infinite';
+
+    set({
+      currentStotra: stotra,
+      currentVerses: verses.sort((a, b) => a.verse_number - b.verse_number),
+      activeVerseIndex: -1,
+      positionMs: 0,
+      isPlaying: false,
+      showMiniPlayer: true,
+      currentLoop: 0,
+      
+      // Apply defaults from Settings
+      playbackSpeed: settings.defaultPlaybackSpeed,
+      scriptMode: settings.scriptPreference === 'all' ? 'devanagari' : 
+                  settings.scriptPreference === 'meaning' ? 'english' : 
+                  settings.scriptPreference as any,
+      loopMode: mappedLoopMode,
+      loopCount: LOOP_COUNTS[mappedLoopMode],
+      
+      sleepTimerMinutes: settings.defaultSleepTimer === 0 ? null : settings.defaultSleepTimer,
+      sleepTimerEndTime: settings.defaultSleepTimer === 0 ? null : Date.now() + settings.defaultSleepTimer * 60 * 1000,
+    });
+  },
 
   setPlaying: (playing) => set({ isPlaying: playing }),
   setPosition: (ms) => set({ positionMs: ms }),
@@ -121,6 +146,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       set({ activeVerseIndex: index });
     }
   },
+
+  setCurrentLoop: (loop) => set({ currentLoop: loop }),
 
   togglePlay: () => set(state => ({ isPlaying: !state.isPlaying })),
 

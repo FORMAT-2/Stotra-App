@@ -9,11 +9,12 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSacredTheme } from '../contexts/ThemeContext';
 import { SacredColors, Spacing, BorderRadius, FontSizes } from '../constants/Theme';
-import { DEITY_ICONS } from '../data/mockData';
+import { DEITY_ICONS, DEITY_IMAGES } from '../data/mockData';
 import type { Deity } from '../data/types';
 
 interface DeityCarouselProps {
@@ -34,6 +35,7 @@ export default function DeityCarousel({ deities, onDeityPress, selectedDeity }: 
       {deities.map((deity) => {
         const isSelected = selectedDeity === deity.slug;
         const emoji = DEITY_ICONS[deity.slug] || '🙏';
+        const localImage = DEITY_IMAGES[deity.slug];
 
         return (
           <TouchableOpacity
@@ -49,15 +51,34 @@ export default function DeityCarousel({ deities, onDeityPress, selectedDeity }: 
                 borderWidth: isSelected ? 2 : 1,
               }
             ]}>
-              <LinearGradient
-                colors={[
-                  `${deity.accent_color}25`,
-                  `${deity.accent_color}08`,
-                ]}
-                style={styles.iconGradient}
-              >
-                <Text style={styles.emoji}>{emoji}</Text>
-              </LinearGradient>
+              {localImage ? (
+                <Image 
+                  source={localImage} 
+                  style={styles.deityImage} 
+                  resizeMode="cover"
+                />
+              ) : deity.image_url ? (
+                <Image 
+                  source={{ 
+                    uri: deity.image_url,
+                    headers: {
+                      'User-Agent': 'StotraApp/1.0'
+                    }
+                  }} 
+                  style={styles.deityImage} 
+                  resizeMode="cover"
+                />
+              ) : (
+                <LinearGradient
+                  colors={[
+                    `${deity.accent_color}25`,
+                    `${deity.accent_color}08`,
+                  ]}
+                  style={styles.iconGradient}
+                >
+                  <Text style={styles.emoji}>{emoji}</Text>
+                </LinearGradient>
+              )}
             </View>
             <Text
               style={[
@@ -105,6 +126,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  deityImage: {
+    width: '100%',
+    height: '100%',
   },
   emoji: {
     fontSize: 28,

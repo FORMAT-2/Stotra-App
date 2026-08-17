@@ -3,55 +3,67 @@
 // ============================================================
 
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface JapamalaState {
   count: number;
-  targetCount: number;
   totalSessions: number;
   totalLifetimeCount: number;
   currentStreak: number;
   isActive: boolean;
   mantraName: string;
 
-  increment: () => void;
+  increment: (targetCount: number) => void;
   reset: () => void;
-  setTarget: (target: number) => void;
   setMantraName: (name: string) => void;
   setActive: (active: boolean) => void;
   completeSession: () => void;
 }
 
-export const useJapamalaStore = create<JapamalaState>((set, get) => ({
-  count: 0,
-  targetCount: 108,
-  totalSessions: 0,
-  totalLifetimeCount: 0,
-  currentStreak: 0,
-  isActive: false,
-  mantraName: 'Om Namah Shivaya',
+export const useJapamalaStore = create<JapamalaState>()(
+  persist(
+    (set, get) => ({
+      count: 0,
+      totalSessions: 0,
+      totalLifetimeCount: 0,
+      currentStreak: 0,
+      isActive: false,
+      mantraName: 'ॐ नमः शिवाय (Om Namah Shivaya)',
 
-  increment: () => {
-    const { count, targetCount } = get();
-    if (count < targetCount) {
-      set(state => ({
-        count: state.count + 1,
-        totalLifetimeCount: state.totalLifetimeCount + 1,
-      }));
+      increment: (targetCount: number) => {
+        const { count } = get();
+        if (count < targetCount) {
+          set(state => ({
+            count: state.count + 1,
+            totalLifetimeCount: state.totalLifetimeCount + 1,
+          }));
+        }
+      },
+
+      reset: () => set({ count: 0, isActive: false }),
+
+      setMantraName: (name) => set({ mantraName: name }),
+
+      setActive: (active) => set({ isActive: active }),
+
+      completeSession: () => set(state => ({
+        totalSessions: state.totalSessions + 1,
+        currentStreak: state.currentStreak + 1, // Basic streak implementation
+        count: 0,
+        isActive: false,
+      })),
+    }),
+    {
+      name: 'japamala-storage', // unique name
+      storage: createJSONStorage(() => AsyncStorage),
+      // Don't persist active session states if they close the app
+      partialize: (state) => ({ 
+        totalSessions: state.totalSessions,
+        totalLifetimeCount: state.totalLifetimeCount,
+        currentStreak: state.currentStreak,
+        mantraName: state.mantraName,
+      }),
     }
-  },
-
-  reset: () => set({ count: 0, isActive: false }),
-
-  setTarget: (target) => set({ targetCount: target, count: 0 }),
-
-  setMantraName: (name) => set({ mantraName: name }),
-
-  setActive: (active) => set({ isActive: active }),
-
-  completeSession: () => set(state => ({
-    totalSessions: state.totalSessions + 1,
-    currentStreak: state.currentStreak + 1,
-    count: 0,
-    isActive: false,
-  })),
-}));
+  )
+);
