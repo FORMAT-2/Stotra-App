@@ -256,3 +256,20 @@ export function getDailyDarshan(): Stotra | undefined {
   const today = new Date().getDay();
   return MOCK_STOTRAS.find(s => s.day_of_week === today);
 }
+
+// Helper: Resolve Deity Image
+export function getDeityImageSource(deity?: Deity) {
+  if (deity?.slug && DEITY_IMAGES[deity.slug.toLowerCase()]) {
+    return DEITY_IMAGES[deity.slug.toLowerCase()];
+  }
+  return DEITY_IMAGES['general'];
+}
+
+// Helper: Resolve Stotra Cover Image
+export function getStotraImageSource(stotra: Stotra) {
+  if (stotra.cover_image_url) {
+    return { uri: stotra.cover_image_url };
+  }
+  // Stotra uses its deity's image as fallback
+  return getDeityImageSource(stotra.deity);
+}

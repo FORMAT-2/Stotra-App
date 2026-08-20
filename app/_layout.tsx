@@ -52,10 +52,24 @@ function RootLayoutNav() {
 
 import { audioService } from '../services/AudioService';
 import { useDataStore } from '../store/dataStore';
+import { 
+  PlayfairDisplay_600SemiBold, 
+  PlayfairDisplay_700Bold 
+} from '@expo-google-fonts/playfair-display';
+import { 
+  PlusJakartaSans_400Regular, 
+  PlusJakartaSans_500Medium, 
+  PlusJakartaSans_700Bold 
+} from '@expo-google-fonts/plus-jakarta-sans';
 
 export default function RootLayout() {
   const router = useRouter();
   const [loaded, error] = useFonts({
+    PlayfairDisplay_600SemiBold,
+    PlayfairDisplay_700Bold,
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_700Bold,
     'SpaceMono': require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 

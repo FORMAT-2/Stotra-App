@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, SafeAreaView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -29,7 +29,7 @@ export default function PaywallScreen() {
       // We assume the admin API is running at EXPO_PUBLIC_API_URL or similar, 
       // but since we are generating an APK, we'll use a placeholder or the actual deployed URL if available.
       // For now, we will construct the backend URL using a known base or EXPO_PUBLIC_SUPABASE_URL domain equivalent if hosted on Vercel.
-      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000'; // Update this before build!
+      const API_URL = process.env.EXPO_PUBLIC_API_URL || (Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000');
       
       const response = await fetch(`${API_URL}/api/razorpay/create-subscription`, {
         method: 'POST',

@@ -1,46 +1,39 @@
 // ============================================================
-// Theme Context — Provides dark/light theme to entire app
+// Theme Context — Provides the 6 Sacred Themes
 // ============================================================
 
 import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
-import { DarkTheme, LightTheme, type ThemeType } from '../constants/Theme';
+import { Themes, type ThemeType } from '../constants/Theme';
 
-type ThemeMode = 'dark' | 'light';
+export type ThemeName = 'dawn' | 'dhyana' | 'temple' | 'bhakti' | 'vedic' | 'amrit';
 
 interface ThemeContextType {
-  mode: ThemeMode;
+  mode: ThemeName;
   theme: ThemeType;
-  toggleTheme: () => void;
-  setTheme: (mode: ThemeMode) => void;
+  setTheme: (mode: ThemeName) => void;
   isDark: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  mode: 'dark',
-  theme: DarkTheme,
-  toggleTheme: () => {},
+  mode: 'dawn',
+  theme: Themes.dawn,
   setTheme: () => {},
-  isDark: true,
+  isDark: false,
 });
 
 export function SacredThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<ThemeMode>('dark');
+  const [mode, setMode] = useState<ThemeName>('dawn');
 
-  const toggleTheme = useCallback(() => {
-    setMode(prev => (prev === 'dark' ? 'light' : 'dark'));
-  }, []);
-
-  const setTheme = useCallback((newMode: ThemeMode) => {
+  const setTheme = useCallback((newMode: ThemeName) => {
     setMode(newMode);
   }, []);
 
   const value = useMemo(() => ({
     mode,
-    theme: mode === 'dark' ? DarkTheme : LightTheme,
-    toggleTheme,
+    theme: Themes[mode],
     setTheme,
-    isDark: mode === 'dark',
-  }), [mode, toggleTheme, setTheme]);
+    isDark: Themes[mode].isDark,
+  }), [mode, setTheme]);
 
   return (
     <ThemeContext.Provider value={value}>

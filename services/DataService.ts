@@ -16,7 +16,7 @@ export const dataService = {
       .order('display_order', { ascending: true });
       
     if (error) {
-      console.error('Error fetching deities:', error);
+      console.warn('Fallback to mock deities due to fetch error:', error.message);
       return MOCK_DEITIES;
     }
     return data as Deity[];
@@ -31,7 +31,7 @@ export const dataService = {
       .order('display_order', { ascending: true });
       
     if (error) {
-      console.error('Error fetching categories:', error);
+      console.warn('Fallback to mock categories due to fetch error:', error.message);
       return MOCK_CATEGORIES;
     }
     return data as Category[];
@@ -50,7 +50,7 @@ export const dataService = {
       .order('created_at', { ascending: false });
       
     if (error) {
-      console.error('Error fetching stotras:', error);
+      console.warn('Fallback to mock stotras due to fetch error:', error.message);
       return MOCK_STOTRAS;
     }
     return data as Stotra[];

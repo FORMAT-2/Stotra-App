@@ -1,161 +1,182 @@
 // ============================================================
-// DIVINE STOTRA — Sacred Design System Theme
-// "Sacred Serenity & Divine Stillness"
+// DIVINE STOTRA — Carousel / Cover-Flow Theme System
 // ============================================================
 
+export interface ThemeType {
+  background: string;
+  backgroundSecondary: string;
+  card: string;
+  surface: string;
+  border: string;
+  borderLight: string;
+  text: string;
+  textSecondary: string;
+  textTertiary: string;
+  textMuted: string;
+  accent: string;
+  accentBg: string;
+  accentText: string;
+  tabBar: string;
+  tabBarActive: string;
+  tabBarInactive: string;
+  goldGradientStart: string;
+  goldGradientEnd: string;
+  isDark: boolean;
+}
+
+export const Themes: Record<string, ThemeType> = {
+  dawn: {
+    background: '#FFF7ED', // orange-50
+    backgroundSecondary: '#FFEDD5', // orange-100
+    card: '#FFFFFF',
+    surface: 'rgba(234, 88, 12, 0.05)',
+    border: '#FFEDD5',
+    borderLight: 'rgba(255, 237, 213, 0.5)',
+    text: '#1C1917', // stone-900
+    textSecondary: '#44403C', // stone-700
+    textTertiary: '#78716C', // stone-500
+    textMuted: '#A8A29E', // stone-400
+    accent: '#EA580C', // orange-600
+    accentBg: '#EA580C',
+    accentText: '#FFFFFF',
+    tabBar: 'rgba(255, 255, 255, 0.95)',
+    tabBarActive: '#EA580C',
+    tabBarInactive: '#A8A29E',
+    goldGradientStart: 'rgba(234, 88, 12, 0.1)',
+    goldGradientEnd: 'rgba(234, 88, 12, 0.0)',
+    isDark: false,
+  },
+  dhyana: {
+    background: '#0F172A', // slate-900
+    backgroundSecondary: '#1E293B', // slate-800
+    card: '#1E293B',
+    surface: 'rgba(255, 255, 255, 0.05)',
+    border: '#334155', // slate-700
+    borderLight: 'rgba(51, 65, 85, 0.5)',
+    text: '#F8FAFC', // slate-50
+    textSecondary: '#CBD5E1', // slate-300
+    textTertiary: '#94A3B8', // slate-400
+    textMuted: '#64748B', // slate-500
+    accent: '#2DD4BF', // teal-400
+    accentBg: '#14B8A6', // teal-500
+    accentText: '#0F172A',
+    tabBar: 'rgba(15, 23, 42, 0.95)',
+    tabBarActive: '#2DD4BF',
+    tabBarInactive: '#64748B',
+    goldGradientStart: 'rgba(45, 212, 191, 0.15)',
+    goldGradientEnd: 'rgba(45, 212, 191, 0.0)',
+    isDark: true,
+  },
+  temple: {
+    background: '#FFFFFF',
+    backgroundSecondary: '#F4F4F5',
+    card: '#FFFFFF',
+    surface: 'rgba(0, 0, 0, 0.03)',
+    border: '#E4E4E7',
+    borderLight: 'rgba(228, 228, 231, 0.5)',
+    text: '#18181B',
+    textSecondary: '#3F3F46',
+    textTertiary: '#71717A',
+    textMuted: '#A1A1AA',
+    accent: '#18181B',
+    accentBg: '#18181B',
+    accentText: '#FFFFFF',
+    tabBar: 'rgba(255, 255, 255, 0.95)',
+    tabBarActive: '#18181B',
+    tabBarInactive: '#A1A1AA',
+    goldGradientStart: 'rgba(0, 0, 0, 0.05)',
+    goldGradientEnd: 'rgba(0, 0, 0, 0.0)',
+    isDark: false,
+  },
+  bhakti: {
+    background: '#FFF1F2', // rose-50
+    backgroundSecondary: '#FFE4E6', // rose-100
+    card: '#FFFFFF',
+    surface: 'rgba(225, 29, 72, 0.05)',
+    border: '#FFE4E6',
+    borderLight: 'rgba(255, 228, 230, 0.5)',
+    text: '#4C0519', // rose-950
+    textSecondary: '#881337', // rose-900
+    textTertiary: '#BE123C', // rose-700
+    textMuted: '#FDA4AF', // rose-300
+    accent: '#E11D48', // rose-600
+    accentBg: '#E11D48',
+    accentText: '#FFFFFF',
+    tabBar: 'rgba(255, 255, 255, 0.95)',
+    tabBarActive: '#E11D48',
+    tabBarInactive: '#FDA4AF',
+    goldGradientStart: 'rgba(225, 29, 72, 0.1)',
+    goldGradientEnd: 'rgba(225, 29, 72, 0.0)',
+    isDark: false,
+  },
+  vedic: {
+    background: '#FFFBEB', // amber-50
+    backgroundSecondary: '#FEF3C7', // amber-100
+    card: '#FEF3C7',
+    surface: 'rgba(185, 28, 28, 0.05)',
+    border: '#FDE68A', // amber-200
+    borderLight: 'rgba(253, 230, 138, 0.5)',
+    text: '#451A03', // amber-950
+    textSecondary: '#78350F', // amber-900
+    textTertiary: '#B45309', // amber-700
+    textMuted: '#FCD34D', // amber-300
+    accent: '#B91C1C', // red-700
+    accentBg: '#B91C1C',
+    accentText: '#FFFBEB',
+    tabBar: 'rgba(254, 243, 199, 0.95)',
+    tabBarActive: '#B91C1C',
+    tabBarInactive: '#D97706',
+    goldGradientStart: 'rgba(185, 28, 28, 0.1)',
+    goldGradientEnd: 'rgba(185, 28, 28, 0.0)',
+    isDark: false,
+  },
+  amrit: {
+    background: '#082f49', // sky-900
+    backgroundSecondary: '#0c4a6e', // sky-950
+    card: '#0c4a6e',
+    surface: 'rgba(255, 255, 255, 0.05)',
+    border: '#075985', // sky-800
+    borderLight: 'rgba(7, 89, 133, 0.5)',
+    text: '#F0F9FF', // sky-50
+    textSecondary: '#BAE6FD', // sky-200
+    textTertiary: '#7DD3FC', // sky-300
+    textMuted: '#38BDF8', // sky-400
+    accent: '#7DD3FC', // sky-300
+    accentBg: '#38BDF8', // sky-400
+    accentText: '#082F49',
+    tabBar: 'rgba(8, 47, 73, 0.95)',
+    tabBarActive: '#7DD3FC',
+    tabBarInactive: '#0284C7',
+    goldGradientStart: 'rgba(125, 211, 252, 0.15)',
+    goldGradientEnd: 'rgba(125, 211, 252, 0.0)',
+    isDark: true,
+  },
+  dark: {
+    background: '#09090b', // zinc-950
+    backgroundSecondary: '#18181b', // zinc-900
+    card: '#18181b',
+    surface: 'rgba(255, 255, 255, 0.05)',
+    border: '#27272a', // zinc-800
+    borderLight: 'rgba(39, 39, 42, 0.5)',
+    text: '#fafafa', // zinc-50
+    textSecondary: '#e4e4e7', // zinc-200
+    textTertiary: '#a1a1aa', // zinc-400
+    textMuted: '#71717a', // zinc-500
+    accent: '#fafafa',
+    accentBg: '#fafafa',
+    accentText: '#09090b',
+    tabBar: 'rgba(9, 9, 11, 0.95)',
+    tabBarActive: '#fafafa',
+    tabBarInactive: '#71717a',
+    goldGradientStart: 'rgba(255, 255, 255, 0.1)',
+    goldGradientEnd: 'rgba(255, 255, 255, 0.0)',
+    isDark: true,
+  },
+};
+
 export const SacredColors = {
-  // Primary — Sacred Gold
-  gold: {
-    50: '#FFFDF5',
-    100: '#FFF9E0',
-    200: '#FFF0B8',
-    300: '#FFE380',
-    400: '#F5C842',
-    500: '#D4AF37', // Primary accent
-    600: '#B8942A',
-    700: '#8B6F1F',
-    800: '#5E4A14',
-    900: '#3A2E0C',
-  },
-
-  // Secondary — Deep Saffron / Ochre
-  saffron: {
-    50: '#FFF7ED',
-    100: '#FFEDD5',
-    200: '#FED7AA',
-    300: '#FDBA74',
-    400: '#FB923C',
-    500: '#F59E0B',
-    600: '#EA580C', // Secondary accent
-    700: '#C2410C',
-    800: '#9A3412',
-    900: '#7C2D12',
-  },
-
-  // Dark Theme — Midnight Temple Obsidian
-  obsidian: {
-    50: '#F5F3FF',
-    100: '#2A2640',
-    200: '#221F38',
-    300: '#1D1A30',
-    400: '#191628',
-    500: '#16141F', // Dark background alternate
-    600: '#131120',
-    700: '#0F0E17', // Primary dark background
-    800: '#0B0A12',
-    900: '#07060D',
-  },
-
-  // Light Theme — Ivory & Sandalwood
-  ivory: {
-    50: '#FFFFFF',
-    100: '#FEFDFB',
-    200: '#FBF9F5',
-    300: '#FAF7F2', // Primary light background
-    400: '#F0ECE3',
-    500: '#E5DFD3', // Sandalwood accent
-    600: '#C9C1B0',
-    700: '#A89E8E',
-    800: '#7A7166',
-    900: '#4D4640',
-  },
-
-  // Accent — Divine Lotus Pink
-  lotus: {
-    50: '#FFF1F2',
-    100: '#FFE4E6',
-    200: '#FECDD3',
-    300: '#FDA4AF',
-    400: '#FB7185',
-    500: '#F472B6', // Lotus highlight
-    600: '#E11D48',
-    700: '#BE123C',
-    800: '#9F1239',
-    900: '#881337',
-  },
-
-  // Utility
-  white: '#FFFFFF',
-  black: '#000000',
-  transparent: 'transparent',
-
-  // Success / Error / Warning
-  success: '#10B981',
-  error: '#EF4444',
-  warning: '#F59E0B',
-  info: '#3B82F6',
-};
-
-export const DarkTheme = {
-  background: SacredColors.obsidian[700],       // #0F0E17
-  backgroundSecondary: SacredColors.obsidian[500], // #16141F
-  backgroundTertiary: SacredColors.obsidian[300],  // #1D1A30
-  card: SacredColors.obsidian[400],              // #191628
-  cardElevated: SacredColors.obsidian[200],      // #221F38
-  surface: 'rgba(255, 255, 255, 0.05)',
-  surfaceHover: 'rgba(255, 255, 255, 0.08)',
-  border: 'rgba(255, 255, 255, 0.08)',
-  borderLight: 'rgba(255, 255, 255, 0.04)',
-
-  text: '#FAF7F2',
-  textSecondary: 'rgba(250, 247, 242, 0.7)',
-  textTertiary: 'rgba(250, 247, 242, 0.45)',
-  textMuted: 'rgba(250, 247, 242, 0.3)',
-
-  accent: SacredColors.gold[500],
-  accentLight: SacredColors.gold[400],
-  accentDark: SacredColors.gold[600],
-  secondary: SacredColors.saffron[600],
-  lotus: SacredColors.lotus[500],
-
-  tabBar: 'rgba(15, 14, 23, 0.95)',
-  tabBarBorder: 'rgba(212, 175, 55, 0.15)',
-  tabBarActive: SacredColors.gold[500],
-  tabBarInactive: 'rgba(250, 247, 242, 0.35)',
-
-  miniPlayer: 'rgba(25, 22, 40, 0.98)',
-  miniPlayerBorder: 'rgba(212, 175, 55, 0.2)',
-
-  gradientStart: SacredColors.obsidian[700],
-  gradientEnd: SacredColors.obsidian[500],
-  goldGradientStart: 'rgba(212, 175, 55, 0.15)',
-  goldGradientEnd: 'rgba(212, 175, 55, 0.0)',
-};
-
-export const LightTheme = {
-  background: SacredColors.ivory[300],
-  backgroundSecondary: SacredColors.ivory[200],
-  backgroundTertiary: SacredColors.ivory[100],
-  card: SacredColors.white,
-  cardElevated: SacredColors.white,
-  surface: 'rgba(0, 0, 0, 0.03)',
-  surfaceHover: 'rgba(0, 0, 0, 0.06)',
-  border: 'rgba(0, 0, 0, 0.08)',
-  borderLight: 'rgba(0, 0, 0, 0.04)',
-
-  text: SacredColors.obsidian[700],
-  textSecondary: 'rgba(15, 14, 23, 0.65)',
-  textTertiary: 'rgba(15, 14, 23, 0.4)',
-  textMuted: 'rgba(15, 14, 23, 0.25)',
-
-  accent: SacredColors.gold[600],
-  accentLight: SacredColors.gold[500],
-  accentDark: SacredColors.gold[700],
-  secondary: SacredColors.saffron[700],
-  lotus: SacredColors.lotus[600],
-
-  tabBar: 'rgba(255, 255, 255, 0.98)',
-  tabBarBorder: 'rgba(0, 0, 0, 0.06)',
-  tabBarActive: SacredColors.gold[600],
-  tabBarInactive: 'rgba(15, 14, 23, 0.35)',
-
-  miniPlayer: 'rgba(255, 255, 255, 0.98)',
-  miniPlayerBorder: 'rgba(212, 175, 55, 0.25)',
-
-  gradientStart: SacredColors.ivory[300],
-  gradientEnd: SacredColors.ivory[200],
-  goldGradientStart: 'rgba(212, 175, 55, 0.1)',
-  goldGradientEnd: 'rgba(212, 175, 55, 0.0)',
+  gold: { 500: '#D4AF37' },
+  saffron: { 600: '#EA580C' }
 };
 
 export const Spacing = {
@@ -172,19 +193,20 @@ export const Spacing = {
 };
 
 export const BorderRadius = {
-  sm: 6,
-  md: 10,
-  lg: 14,
-  xl: 18,
-  '2xl': 24,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  '2xl': 32,
+  '3xl': 36,
   full: 9999,
 };
 
 export const FontSizes = {
-  xs: 11,
-  sm: 13,
-  md: 15,
-  lg: 17,
+  xs: 12,
+  sm: 14,
+  md: 16,
+  lg: 18,
   xl: 20,
   '2xl': 24,
   '3xl': 30,
@@ -192,12 +214,10 @@ export const FontSizes = {
   '5xl': 48,
 };
 
-export const FontWeights = {
-  regular: '400' as const,
-  medium: '500' as const,
-  semibold: '600' as const,
-  bold: '700' as const,
-  extrabold: '800' as const,
+export const Fonts = {
+  serif: 'PlayfairDisplay_600SemiBold',
+  serifBold: 'PlayfairDisplay_700Bold',
+  sans: 'PlusJakartaSans_400Regular',
+  sansMedium: 'PlusJakartaSans_500Medium',
+  sansBold: 'PlusJakartaSans_700Bold',
 };
-
-export type ThemeType = typeof DarkTheme;

@@ -128,10 +128,50 @@ class AudioService {
       store.setCurrentLoop(nextLoop);
       if (this.sound) await this.sound.replayAsync();
     } else {
-      // End playback
+      // End playback and move to next track if available
       store.setPlaying(false);
       store.setPosition(0);
       store.setCurrentLoop(0);
+      this.playNext();
+    }
+  }
+
+  async playNext() {
+    const store = usePlayerStore.getState();
+    if (!store.currentStotra) return;
+    
+    // Lazy require to avoid cycles
+    const { useDataStore } = require('../store/dataStore');
+    const { dataService } = require('./DataService');
+    const stotras = useDataStore.getState().stotras;
+    
+    const currentIndex = stotras.findIndex((s: any) => s.id === store.currentStotra?.id);
+    if (currentIndex >= 0 && currentIndex < stotras.length - 1) {
+      const nextStotra = stotras[currentIndex + 1];
+      const verses = await dataService.getVersesForStotra(nextStotra.id);
+      this.playStotra(nextStotra, verses);
+    }
+  }
+
+  async playPrevious() {
+    const store = usePlayerStore.getState();
+    if (!store.currentStotra) return;
+
+    // If we're more than 3 seconds in, just restart current track
+    if (store.positionMs > 3000) {
+      this.seekTo(0);
+      return;
+    }
+    
+    const { useDataStore } = require('../store/dataStore');
+    const { dataService } = require('./DataService');
+    const stotras = useDataStore.getState().stotras;
+    
+    const currentIndex = stotras.findIndex((s: any) => s.id === store.currentStotra?.id);
+    if (currentIndex > 0) {
+      const prevStotra = stotras[currentIndex - 1];
+      const verses = await dataService.getVersesForStotra(prevStotra.id);
+      this.playStotra(prevStotra, verses);
     }
   }
 }

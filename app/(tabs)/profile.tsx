@@ -1,623 +1,299 @@
-import React, { useState } from 'react';
+// ============================================================
+// Profile Screen — User Account & Settings
+// ============================================================
+
+import React from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
+  ScrollView,
   StyleSheet,
   Platform,
-  Switch,
-  Modal,
-  TouchableWithoutFeedback,
-  Share,
-  Linking,
-  Alert,
   Image,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { User, Crown, Settings, Info, LogOut, ChevronRight, Share2, Star } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSacredTheme } from '../../contexts/ThemeContext';
-import { SacredColors, Spacing, BorderRadius, FontSizes } from '../../constants/Theme';
-import { useRouter } from 'expo-router';
+import { Spacing, BorderRadius, Fonts } from '../../constants/Theme';
 import { useAuthStore } from '../../store/authStore';
-import { useJapamalaStore } from '../../store/japamalaStore';
-import { useSettingsStore, Language, ScriptPreference, SleepTimer, PlaybackSpeed, LoopMode } from '../../store/settingsStore';
+import { useRouter } from 'expo-router';
 
 export default function ProfileScreen() {
+  const { theme, setTheme } = useSacredTheme();
+  const { user, profile, subscriptionStatus, signOut } = useAuthStore();
   const router = useRouter();
-  const { theme, isDark, toggleTheme } = useSacredTheme();
-  const { totalSessions, totalLifetimeCount, currentStreak } = useJapamalaStore();
-  const { user, signOut, subscriptionStatus } = useAuthStore();
-  
-  // Settings Store
-  const { 
-    language, setLanguage, 
-    scriptPreference, setScriptPreference, 
-    dailyTarget, setDailyTarget, 
-    remindersEnabled, setRemindersEnabled, 
-    defaultSleepTimer, setDefaultSleepTimer, 
-    defaultPlaybackSpeed, setDefaultPlaybackSpeed, 
-    defaultLoopMode, setDefaultLoopMode 
-  } = useSettingsStore();
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalConfig, setModalConfig] = useState<{ title: string; options: any[]; onSelect: (val: any) => void }>({
-    title: '', options: [], onSelect: () => {}
-  });
-
-  const openOptions = (title: string, options: { label: string, value: any }[], onSelect: (val: any) => void) => {
-    setModalConfig({ title, options, onSelect });
-    setModalVisible(true);
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace('/auth');
   };
 
-  const handleRateApp = async () => {
-    // In a real app with expo-store-review, we'd use StoreReview.requestReview()
-    // For now, we'll simulate it with an alert since the app isn't published.
-    Alert.alert(
-      "Rate Divine Stotra",
-      "If you enjoy using Divine Stotra, would you mind taking a moment to rate it? It helps us spread the divine knowledge.",
-      [
-        { text: "Remind Me Later", style: "cancel" },
-        { text: "Rate Now", onPress: () => Linking.openURL('https://play.google.com/store/apps/details?id=com.divinestotra.app').catch(() => {}) }
-      ]
-    );
-  };
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Seeker';
+  const displayEmail = user?.email || 'Not signed in';
+  const isPremium = subscriptionStatus === 'active';
 
-  const handleShare = async () => {
-    try {
-      await Share.share({
-        message: 'Join me in chanting divine mantras and stotras with the Divine Stotra app! Download it now: https://divinestotra.app',
-        title: 'Divine Stotra App'
-      });
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const handleAuthPress = async () => {
-    if (user) {
-      await signOut();
-    } else {
-      router.push('/auth');
-    }
-  };
-
-  const settingSections = [
-    {
-      title: 'Display',
-      items: [
-        {
-          icon: isDark ? 'moon' : 'sunny',
-          label: isDark ? 'Dark Theme' : 'Light Theme',
-          subtitle: 'Toggle appearance',
-          type: 'toggle' as const,
-          value: isDark,
-          onToggle: toggleTheme,
-        },
-        {
-          icon: 'language',
-          label: 'Language',
-          subtitle: language === 'english' ? 'English' : 'हिंदी (Hindi)',
-          type: 'nav' as const,
-          onPress: () => openOptions('Language', [
-            { label: 'English', value: 'english' },
-            { label: 'हिंदी (Hindi)', value: 'hindi' }
-          ], (val) => setLanguage(val as Language)),
-        },
-        {
-          icon: 'text',
-          label: 'Script Preference',
-          subtitle: scriptPreference === 'all' ? 'All (Devanagari + IAST + Meaning)' : 
-                    scriptPreference === 'devanagari' ? 'Devanagari Only' :
-                    scriptPreference === 'iast' ? 'IAST (English Script) Only' : 'Meaning Only',
-          type: 'nav' as const,
-          onPress: () => openOptions('Script Preference', [
-            { label: 'All', value: 'all' },
-            { label: 'Devanagari Only', value: 'devanagari' },
-            { label: 'IAST Only', value: 'iast' },
-            { label: 'Meaning Only', value: 'meaning' }
-          ], (val) => setScriptPreference(val as ScriptPreference)),
-        },
-      ],
-    },
-    {
-      title: 'Chanting',
-      items: [
-        {
-          icon: 'flag',
-          label: 'Daily Target',
-          subtitle: `${dailyTarget} mantras per day`,
-          type: 'nav' as const,
-          onPress: () => openOptions('Daily Target', [
-            { label: '11 Mantras', value: 11 },
-            { label: '21 Mantras', value: 21 },
-            { label: '51 Mantras', value: 51 },
-            { label: '108 Mantras', value: 108 },
-            { label: '1008 Mantras', value: 1008 }
-          ], (val) => setDailyTarget(val as number)),
-        },
-        {
-          icon: 'notifications-outline',
-          label: 'Reminders',
-          subtitle: remindersEnabled ? 'On' : 'Off',
-          type: 'toggle' as const,
-          value: remindersEnabled,
-          onToggle: setRemindersEnabled,
-        },
-        {
-          icon: 'timer-outline',
-          label: 'Default Sleep Timer',
-          subtitle: defaultSleepTimer === 0 ? 'Off' : `${defaultSleepTimer} minutes`,
-          type: 'nav' as const,
-          onPress: () => openOptions('Default Sleep Timer', [
-            { label: 'Off', value: 0 },
-            { label: '15 minutes', value: 15 },
-            { label: '30 minutes', value: 30 },
-            { label: '45 minutes', value: 45 },
-            { label: '60 minutes', value: 60 }
-          ], (val) => setDefaultSleepTimer(val as SleepTimer)),
-        },
-      ],
-    },
-    {
-      title: 'Audio',
-      items: [
-        {
-          icon: 'volume-high',
-          label: 'Default Playback Speed',
-          subtitle: `${defaultPlaybackSpeed}x`,
-          type: 'nav' as const,
-          onPress: () => openOptions('Default Playback Speed', [
-            { label: '0.5x', value: 0.5 },
-            { label: '0.75x', value: 0.75 },
-            { label: '1.0x (Normal)', value: 1.0 },
-            { label: '1.25x', value: 1.25 },
-            { label: '1.5x', value: 1.5 },
-            { label: '2.0x', value: 2.0 }
-          ], (val) => setDefaultPlaybackSpeed(val as PlaybackSpeed)),
-        },
-        {
-          icon: 'repeat',
-          label: 'Default Loop Mode',
-          subtitle: defaultLoopMode === 'infinite' ? 'Infinite' : `${defaultLoopMode}x`,
-          type: 'nav' as const,
-          onPress: () => openOptions('Default Loop Mode', [
-            { label: '1x (No Loop)', value: '1' },
-            { label: '11x', value: '11' },
-            { label: '108x', value: '108' },
-            { label: 'Infinite Loop', value: 'infinite' }
-          ], (val) => setDefaultLoopMode(val as LoopMode)),
-        },
-      ],
-    },
-    {
-      title: 'About',
-      items: [
-        {
-          icon: 'information-circle',
-          label: 'About Divine Stotra',
-          subtitle: 'Version 1.0.0',
-          type: 'nav' as const,
-          onPress: () => router.push('/about'),
-        },
-        {
-          icon: 'heart',
-          label: 'Rate the App',
-          subtitle: 'Support the divine mission',
-          type: 'nav' as const,
-          onPress: handleRateApp,
-        },
-        {
-          icon: 'share-social',
-          label: 'Share with Friends',
-          subtitle: 'Spread the sacred knowledge',
-          type: 'nav' as const,
-          onPress: handleShare,
-        },
-      ],
-    },
-  ];
+  const renderSettingRow = (IconComponent: any, label: string, onPress: () => void) => (
+    <TouchableOpacity 
+      style={[styles.settingRow, { borderBottomColor: theme.border }]} 
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.settingRowLeft}>
+        <IconComponent size={20} color={theme.textMuted} />
+        <Text style={[styles.settingRowText, { color: theme.text }]}>{label}</Text>
+      </View>
+      <ChevronRight size={20} color={theme.textMuted} />
+    </TouchableOpacity>
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>🙏 Profile</Text>
-        </View>
-
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
         {/* User Card */}
-        <View style={styles.userCardContainer}>
-          <LinearGradient
-            colors={[`${SacredColors.gold[500]}15`, `${SacredColors.gold[500]}05`, theme.card]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.userCard, { borderColor: `${SacredColors.gold[500]}20` }]}
-          >
-            <View style={styles.avatarContainer}>
-              {user?.user_metadata?.avatar_url ? (
-                <Image 
-                  source={{ uri: user.user_metadata.avatar_url }} 
-                  style={styles.avatarImage} 
-                />
-              ) : (
-                <LinearGradient
-                  colors={[SacredColors.gold[500], SacredColors.saffron[600]]}
-                  style={styles.avatar}
-                >
-                  <Text style={styles.avatarEmoji}>🙏</Text>
-                </LinearGradient>
-              )}
-            </View>
-            <View style={styles.userInfo}>
-              <Text style={[styles.userName, { color: theme.text }]} numberOfLines={1}>
-                {user ? (user.user_metadata?.display_name || user.email?.split('@')[0] || 'Devotee') : 'Devotee'}
-              </Text>
-              <Text style={[styles.userSubtitle, { color: theme.textTertiary }]} numberOfLines={1}>
-                {user ? user.email : 'Guest Mode · Tap to sign in'}
-              </Text>
-              {user && (
-                <TouchableOpacity onPress={() => router.push('/edit-profile')} style={styles.editProfileBtn}>
-                  <Ionicons name="pencil" size={14} color={SacredColors.gold[500]} />
-                  <Text style={[styles.editProfileText, { color: SacredColors.gold[500] }]}>Edit Profile</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+        <View style={[styles.userCard, { backgroundColor: theme.card, shadowColor: theme.text }]}>
+          <View style={[styles.avatarRing, { backgroundColor: theme.accentBg }]}>
+            {profile?.avatar_url || user?.user_metadata?.avatar_url ? (
+              <Image source={{ uri: profile?.avatar_url || user?.user_metadata?.avatar_url }} style={styles.avatarImage} />
+            ) : (
+              <User size={40} color={theme.accentText} />
+            )}
+          </View>
+          <View style={styles.userInfo}>
+            <Text style={[styles.userName, { color: theme.text, fontFamily: Fonts.serif }]} numberOfLines={1}>
+              {displayName}
+            </Text>
+            <Text style={[styles.userEmail, { color: theme.textMuted }]} numberOfLines={1}>
+              {displayEmail}
+            </Text>
             <TouchableOpacity 
-              onPress={handleAuthPress}
-              style={[styles.signInButton, { borderColor: SacredColors.gold[500], alignSelf: 'center' }]}
+              style={[styles.editBtn, { borderColor: theme.border }]}
+              onPress={() => router.push('/edit-profile')}
             >
-              <Text style={[styles.signInText, { color: SacredColors.gold[500] }]}>
-                {user ? 'Sign Out' : 'Sign In'}
-              </Text>
+              <Text style={[styles.editBtnText, { color: theme.text }]}>EDIT PROFILE</Text>
             </TouchableOpacity>
-          </LinearGradient>
+          </View>
         </View>
 
         {/* Upgrade Banner */}
-        {user && subscriptionStatus !== 'active' && (
-          <TouchableOpacity 
-            style={styles.upgradeCard}
-            onPress={() => router.push('/paywall')}
-            activeOpacity={0.8}
-          >
+        {!isPremium && (
+          <TouchableOpacity activeOpacity={0.9} onPress={() => router.push('/paywall')}>
             <LinearGradient
-              colors={[SacredColors.gold[500], SacredColors.saffron[600]]}
+              colors={['#FDE68A', '#F59E0B']}
+              style={styles.premiumBanner}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.upgradeGradient}
+              end={{ x: 1, y: 1 }}
             >
-              <View style={styles.upgradeInfo}>
-                <Text style={styles.upgradeTitle}>Unlock Premium 🌟</Text>
-                <Text style={styles.upgradeSub}>Get unlimited audio & offline downloads</Text>
+              <Crown size={96} color="#000" opacity={0.1} style={styles.bannerIcon} />
+              <Text style={[styles.bannerTitle, { fontFamily: Fonts.serif }]}>Divine Premium</Text>
+              <Text style={styles.bannerSub}>Unlock all stotras, downloads, and ad-free listening.</Text>
+              <View style={styles.bannerBtn}>
+                <Text style={styles.bannerBtnText}>Start 7-Day Free Trial</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#FFF" />
             </LinearGradient>
           </TouchableOpacity>
         )}
 
-        {/* Stats */}
-        <View style={styles.statsContainer}>
-          {[
-            { label: 'Japamala\nSessions', value: totalSessions.toString(), icon: '📿' },
-            { label: 'Total\nChants', value: totalLifetimeCount.toLocaleString(), icon: '🔢' },
-            { label: 'Day\nStreak', value: `${currentStreak}`, icon: '🔥' },
-            { label: 'Stotras\nPlayed', value: '0', icon: '🎵' },
-          ].map((stat, i) => (
-            <View key={i} style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-              <Text style={styles.statIcon}>{stat.icon}</Text>
-              <Text style={[styles.statValue, { color: SacredColors.gold[500] }]}>{stat.value}</Text>
-              <Text style={[styles.statLabel, { color: theme.textTertiary }]}>{stat.label}</Text>
-            </View>
+        {/* Theme Selection */}
+        <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>THEME</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.themeScroll}>
+          {['dawn', 'dhyana', 'temple', 'bhakti', 'vedic', 'amrit', 'dark'].map((t) => (
+            <TouchableOpacity 
+              key={t}
+              style={[
+                styles.themeChip, 
+                { backgroundColor: theme.card, borderColor: theme.border }
+              ]}
+              onPress={() => setTheme(t as any)}
+            >
+              <Text style={[styles.themeChipText, { color: theme.text }]}>
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+              </Text>
+            </TouchableOpacity>
           ))}
+        </ScrollView>
+
+        {/* Preferences */}
+        <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>PREFERENCES</Text>
+        <View style={[styles.settingsCard, { backgroundColor: theme.card }]}>
+          {renderSettingRow(Settings, 'General Settings', () => router.push('/settings'))}
+          {renderSettingRow(Crown, 'Subscription', () => router.push('/paywall'))}
         </View>
 
-        {/* Settings */}
-        {settingSections.map((section, sectionIndex) => (
-          <View key={sectionIndex}>
-            <Text style={[styles.sectionTitle, { color: theme.textTertiary }]}>
-              {section.title}
-            </Text>
-            <View style={[styles.sectionCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-              {section.items.map((item, itemIndex) => (
-                <TouchableOpacity
-                  key={itemIndex}
-                  onPress={item.type === 'nav' ? item.onPress : undefined}
-                  style={[
-                    styles.settingItem,
-                    itemIndex < section.items.length - 1 && {
-                      borderBottomColor: theme.borderLight,
-                      borderBottomWidth: 1,
-                    },
-                  ]}
-                  activeOpacity={item.type === 'toggle' ? 1 : 0.7}
-                >
-                  <View style={[styles.settingIcon, { backgroundColor: `${SacredColors.gold[500]}10` }]}>
-                    <Ionicons name={item.icon as any} size={18} color={SacredColors.gold[500]} />
-                  </View>
-                  <View style={styles.settingInfo}>
-                    <Text style={[styles.settingLabel, { color: theme.text }]}>{item.label}</Text>
-                    <Text style={[styles.settingSub, { color: theme.textTertiary }]}>{item.subtitle}</Text>
-                  </View>
-                  {item.type === 'toggle' ? (
-                    <Switch
-                      value={item.value}
-                      onValueChange={item.onToggle}
-                      trackColor={{ false: theme.surface, true: `${SacredColors.gold[500]}50` }}
-                      thumbColor={item.value ? SacredColors.gold[500] : theme.textMuted}
-                    />
-                  ) : (
-                    <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        ))}
+        {/* Support & About */}
+        <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>SUPPORT & ABOUT</Text>
+        <View style={[styles.settingsCard, { backgroundColor: theme.card }]}>
+          {renderSettingRow(Info, 'About Divine Stotra', () => router.push('/about'))}
+          {renderSettingRow(Star, 'Rate the App', () => {})}
+          {renderSettingRow(Share2, 'Share with Friends', () => {})}
+        </View>
 
-        <View style={{ height: 120 }} />
+        {/* Sign Out */}
+        <TouchableOpacity 
+          style={styles.signOutBtn}
+          onPress={handleSignOut}
+          activeOpacity={0.8}
+        >
+          <LogOut size={20} color="#EF4444" />
+          <Text style={styles.signOutText}>Sign Out</Text>
+        </TouchableOpacity>
+
       </ScrollView>
-
-      {/* Options Modal */}
-      <Modal
-        visible={modalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={[styles.modalContent, { backgroundColor: theme.card, borderColor: theme.border }]}>
-                <Text style={[styles.modalTitle, { color: theme.text }]}>{modalConfig.title}</Text>
-                
-                {modalConfig.options.map((option, idx) => (
-                  <TouchableOpacity
-                    key={idx}
-                    style={[
-                      styles.modalOption,
-                      idx < modalConfig.options.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.borderLight }
-                    ]}
-                    onPress={() => {
-                      modalConfig.onSelect(option.value);
-                      setModalVisible(false);
-                    }}
-                  >
-                    <Text style={[styles.modalOptionText, { color: theme.text }]}>{option.label}</Text>
-                  </TouchableOpacity>
-                ))}
-                
-                <TouchableOpacity
-                  style={[styles.modalCancelBtn, { backgroundColor: theme.surface }]}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Text style={[styles.modalCancelText, { color: SacredColors.gold[500] }]}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { paddingBottom: 20 },
-  header: {
-    paddingTop: Platform.OS === 'ios' ? 60 : 48,
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
+  container: {
+    flex: 1,
   },
-  title: {
-    fontSize: FontSizes['3xl'],
-    fontWeight: '800',
-    letterSpacing: -0.5,
-  },
-
-  // User Card
-  userCardContainer: {
-    paddingHorizontal: Spacing.lg,
+  scrollContent: {
+    paddingTop: Platform.OS === 'ios' ? 70 : 50,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: 120,
   },
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.xl,
-    borderWidth: 1,
-    gap: Spacing.md,
+    padding: Spacing.xl,
+    borderRadius: BorderRadius['3xl'],
+    marginBottom: Spacing.xl,
+    gap: Spacing.lg,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
   },
-  avatarContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    overflow: 'hidden',
-  },
-  avatar: {
-    width: '100%',
-    height: '100%',
+  avatarRing: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 32,
-  },
-  avatarEmoji: {
-    fontSize: 24,
+    width: 74,
+    height: 74,
+    borderRadius: 37,
   },
   userInfo: {
     flex: 1,
-    gap: 2,
+    alignItems: 'flex-start',
   },
   userName: {
-    fontSize: FontSizes.lg,
-    fontWeight: '700',
-  },
-  userSubtitle: {
-    fontSize: FontSizes.sm,
-    marginTop: 2,
-  },
-  editProfileBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-    gap: 4,
-  },
-  editProfileText: {
-    fontSize: FontSizes.xs,
+    fontSize: 24,
     fontWeight: '600',
+    marginBottom: 4,
   },
-  signInButton: {
-    paddingHorizontal: Spacing.md,
+  userEmail: {
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  editBtn: {
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: BorderRadius.full,
-    borderWidth: 1.5,
+    borderWidth: 1,
   },
-  signInText: {
-    fontSize: FontSizes.sm,
+  editBtnText: {
+    fontSize: 10,
     fontWeight: '700',
+    letterSpacing: 1,
   },
-
-  // Upgrade Banner
-  upgradeCard: {
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.md,
+  premiumBanner: {
+    padding: Spacing.xl,
+    borderRadius: BorderRadius['3xl'],
+    marginBottom: Spacing.xl,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  bannerIcon: {
+    position: 'absolute',
+    bottom: -16,
+    right: -16,
+  },
+  bannerTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#451A03', // amber-950
+    marginBottom: 4,
+  },
+  bannerSub: {
+    fontSize: 14,
+    color: '#451A03',
+    fontWeight: '500',
+    opacity: 0.9,
+    marginBottom: 16,
+    paddingRight: 40,
+  },
+  bannerBtn: {
+    backgroundColor: '#451A03',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderRadius: BorderRadius.xl,
-    overflow: 'hidden',
-    shadowColor: SacredColors.gold[500],
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    alignSelf: 'flex-start',
   },
-  upgradeGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.lg,
-    gap: Spacing.md,
-  },
-  upgradeInfo: {
-    flex: 1,
-  },
-  upgradeTitle: {
-    color: '#FFF',
-    fontSize: FontSizes.md,
+  bannerBtnText: {
+    color: '#FFFBEB',
+    fontSize: 14,
     fontWeight: '700',
-    marginBottom: 2,
   },
-  upgradeSub: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: FontSizes.xs,
-  },
-
-  // Stats
-  statsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-    gap: Spacing.sm,
-  },
-  statCard: {
-    flex: 1,
-    alignItems: 'center',
-    padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    gap: 4,
-  },
-  statIcon: {
-    fontSize: 20,
-  },
-  statValue: {
-    fontSize: FontSizes.xl,
-    fontWeight: '800',
-  },
-  statLabel: {
-    fontSize: 9,
-    textAlign: 'center',
-    lineHeight: 12,
-  },
-
-  // Settings
   sectionTitle: {
-    fontSize: FontSizes.xs,
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing['2xl'],
-    paddingBottom: Spacing.sm,
+    letterSpacing: 1.5,
+    marginBottom: Spacing.md,
+    marginLeft: 8,
   },
-  sectionCard: {
-    marginHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
+  settingsCard: {
+    borderRadius: BorderRadius['3xl'],
+    marginBottom: Spacing.xl,
     overflow: 'hidden',
   },
-  settingItem: {
+  settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.md,
+    justifyContent: 'space-between',
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
+  },
+  settingRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.md,
   },
-  settingIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: BorderRadius.sm,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  settingInfo: {
-    flex: 1,
-    gap: 1,
-  },
-  settingLabel: {
-    fontSize: FontSizes.md,
+  settingRowText: {
+    fontSize: 16,
     fontWeight: '500',
   },
-  settingSub: {
-    fontSize: FontSizes.xs,
-  },
-
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
+  signOutBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.lg,
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: BorderRadius['2xl'],
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    marginTop: Spacing.md,
   },
-  modalContent: {
-    width: '100%',
+  signOutText: {
+    color: '#EF4444',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  themeScroll: {
+    gap: Spacing.md,
+    paddingBottom: Spacing.xl,
+  },
+  themeChip: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
-    padding: Spacing.lg,
   },
-  modalTitle: {
-    fontSize: FontSizes.lg,
-    fontWeight: '700',
-    marginBottom: Spacing.md,
-    textAlign: 'center',
-  },
-  modalOption: {
-    paddingVertical: Spacing.md,
-    alignItems: 'center',
-  },
-  modalOptionText: {
-    fontSize: FontSizes.md,
-  },
-  modalCancelBtn: {
-    marginTop: Spacing.md,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-  },
-  modalCancelText: {
-    fontSize: FontSizes.md,
-    fontWeight: '700',
+  themeChipText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
-

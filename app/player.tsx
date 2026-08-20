@@ -1,8 +1,8 @@
 // ============================================================
-// Full-Screen Player — Sacred Audio Player with Karaoke Lyrics
+// Player Screen — Cover-Flow Mode & Verses Mode
 // ============================================================
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,29 +11,23 @@ import {
   StyleSheet,
   Platform,
   Dimensions,
-  Animated,
+  Image,
 } from 'react-native';
+import { ChevronDown, Play, Pause, SkipForward, SkipBack, Heart, Repeat, Share2 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import Slider from '@react-native-community/slider';
+
 import { useSacredTheme } from '../contexts/ThemeContext';
-import { SacredColors, Spacing, BorderRadius, FontSizes } from '../constants/Theme';
+import { Spacing, BorderRadius, Fonts } from '../constants/Theme';
 import { usePlayerStore } from '../store/playerStore';
 import { useFavoritesStore } from '../store/favoritesStore';
 import { audioService } from '../services/AudioService';
-import { formatDuration, DEITY_ICONS } from '../data/mockData';
-import type { LoopMode, PlaybackSpeed, ScriptMode } from '../data/types';
-import Slider from '@react-native-community/slider';
+import { formatDuration, getStotraImageSource } from '../data/mockData';
+import type { LoopMode } from '../data/types';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const LOOP_OPTIONS: LoopMode[] = ['1x', '3x', '11x', '21x', '108x', 'infinite'];
-const SPEED_OPTIONS: PlaybackSpeed[] = [0.75, 1.0, 1.25, 1.5];
-const SCRIPT_OPTIONS: { key: ScriptMode; label: string; labelShort: string }[] = [
-  { key: 'devanagari', label: 'Devanagari', labelShort: 'देव' },
-  { key: 'iast', label: 'IAST', labelShort: 'IAST' },
-  { key: 'meaning', label: 'Meaning', labelShort: 'Eng' },
-];
 
 export default function PlayerScreen() {
   const { theme, isDark } = useSacredTheme();
@@ -47,49 +41,24 @@ export default function PlayerScreen() {
     positionMs,
     durationMs,
     loopMode,
-    playbackSpeed,
-    scriptMode,
-    setPlaybackSpeed,
-    setScriptMode,
     setLoopMode,
   } = usePlayerStore();
 
   const { favoriteIds, toggleFavorite } = useFavoritesStore();
-  const [showSleepTimer, setShowSleepTimer] = useState(false);
+  const [showVerses, setShowVerses] = useState(false);
 
   if (!currentStotra) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-          No stotra selected
-        </Text>
+      <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: theme.textSecondary }}>No stotra selected</Text>
       </View>
     );
   }
 
   const isFavorite = favoriteIds.includes(currentStotra.id);
-
-  const deityEmoji = currentStotra.deity ? DEITY_ICONS[currentStotra.deity.slug] || '🪔' : '🪔';
-  const accentColor = currentStotra.deity?.accent_color || SacredColors.gold[500];
-  const progress = durationMs > 0 ? positionMs / durationMs : 0;
   const totalDuration = currentStotra.duration_seconds;
-
   const displayPosition = Math.floor(positionMs / 1000);
   const displayDuration = Math.floor(durationMs > 0 ? durationMs / 1000 : totalDuration);
-
-  const cycleLoop = () => {
-    const currentIdx = LOOP_OPTIONS.indexOf(loopMode);
-    const nextIdx = (currentIdx + 1) % LOOP_OPTIONS.length;
-    setLoopMode(LOOP_OPTIONS[nextIdx]);
-  };
-
-  const cycleSpeed = () => {
-    const currentIdx = SPEED_OPTIONS.indexOf(playbackSpeed);
-    const nextIdx = (currentIdx + 1) % SPEED_OPTIONS.length;
-    const newSpeed = SPEED_OPTIONS[nextIdx];
-    setPlaybackSpeed(newSpeed);
-    audioService.setRate(newSpeed);
-  };
 
   const handleTogglePlay = () => {
     if (isPlaying) {
@@ -99,328 +68,215 @@ export default function PlayerScreen() {
     }
   };
 
-  const getVerseDisplay = (verse: typeof currentVerses[0], isActive: boolean) => {
-    switch (scriptMode) {
-      case 'devanagari':
-        return (
-          <View style={styles.verseContent}>
-            <Text style={[
-              styles.verseSanskrit,
-              {
-                color: isActive ? accentColor : theme.textSecondary,
-                fontSize: isActive ? 22 : 18,
-                fontWeight: isActive ? '700' : '400',
-              },
-            ]}>
-              {verse.sanskrit_text}
-            </Text>
-          </View>
-        );
-      case 'iast':
-        return (
-          <View style={styles.verseContent}>
-            <Text style={[
-              styles.verseIAST,
-              {
-                color: isActive ? accentColor : theme.textSecondary,
-                fontSize: isActive ? 19 : 16,
-                fontWeight: isActive ? '600' : '400',
-              },
-            ]}>
-              {verse.transliteration_iast}
-            </Text>
-          </View>
-        );
-      case 'meaning':
-        return (
-          <View style={styles.verseContent}>
-            <Text style={[
-              styles.verseSanskrit,
-              {
-                color: isActive ? accentColor : theme.textTertiary,
-                fontSize: isActive ? 18 : 15,
-                fontWeight: isActive ? '600' : '400',
-              },
-            ]}>
-              {verse.sanskrit_text}
-            </Text>
-            <Text style={[
-              styles.verseMeaning,
-              {
-                color: isActive ? theme.text : theme.textSecondary,
-                fontSize: isActive ? 15 : 13,
-                fontWeight: isActive ? '500' : '400',
-              },
-            ]}>
-              {verse.meaning_english}
-            </Text>
-            {verse.meaning_hindi && (
-              <Text style={[
-                styles.verseMeaningHindi,
-                {
-                  color: isActive ? theme.textSecondary : theme.textTertiary,
-                  fontSize: isActive ? 14 : 12,
-                },
-              ]}>
-                {verse.meaning_hindi}
-              </Text>
-            )}
-          </View>
-        );
-    }
+  const cycleLoop = () => {
+    const currentIdx = LOOP_OPTIONS.indexOf(loopMode);
+    const nextIdx = (currentIdx + 1) % LOOP_OPTIONS.length;
+    setLoopMode(LOOP_OPTIONS[nextIdx]);
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Background gradient */}
-      <LinearGradient
-        colors={[`${accentColor}15`, `${accentColor}05`, theme.background]}
-        style={styles.bgGradient}
-      />
-
-      {/* Top bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.topButton}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+      
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          onPress={() => router.back()} 
+          style={[styles.headerBtn, { backgroundColor: theme.card }]}
         >
-          <Ionicons name="chevron-down" size={28} color={theme.text} />
+          <ChevronDown size={24} color={theme.text} />
         </TouchableOpacity>
-        <View style={styles.topCenter}>
-          <Text style={[styles.topLabel, { color: theme.textTertiary }]}>NOW PLAYING</Text>
-          <Text style={[styles.topCategory, { color: accentColor }]}>
-            {currentStotra.category?.title_english || 'Stotra'}
+        
+        <TouchableOpacity 
+          style={styles.headerCenter}
+          activeOpacity={0.7}
+          onPress={() => setShowVerses(!showVerses)}
+        >
+          <Text style={[styles.headerLabel, { color: theme.accent }]}>
+            {showVerses ? 'NOW PLAYING' : 'VERSES'}
           </Text>
-        </View>
-        <TouchableOpacity style={styles.topButton}>
-          <Ionicons name="ellipsis-horizontal" size={24} color={theme.text} />
+          <Text style={[styles.headerSub, { color: theme.text }]}>Tap to toggle</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={[styles.headerBtn, { backgroundColor: theme.card }]}>
+          <Share2 size={20} color={theme.text} />
         </TouchableOpacity>
       </View>
 
-      {/* Cover Art */}
-      <View style={styles.coverContainer}>
-        <LinearGradient
-          colors={[`${accentColor}30`, `${accentColor}10`]}
-          style={[styles.coverArt, { borderColor: `${accentColor}25` }]}
-        >
-          <Text style={styles.coverEmoji}>{deityEmoji}</Text>
-        </LinearGradient>
-      </View>
+      {!showVerses ? (
+        <View style={styles.contentArea}>
+          
+          {/* Artwork Area */}
+          <View style={styles.artworkContainer}>
+            <View style={[styles.artworkWrapper, { shadowColor: theme.text }]}>
+              <Image 
+                source={getStotraImageSource(currentStotra)} 
+                style={styles.artworkImage}
+                resizeMethod="resize"
+              />
+              <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.4)']}
+                style={styles.artworkGradient}
+              />
+            </View>
+          </View>
 
-      {/* Title */}
-      <View style={styles.titleContainer}>
-        <Text style={[styles.stotraTitle, { color: theme.text }]} numberOfLines={1}>
-          {currentStotra.title_english}
-        </Text>
-        <Text style={[styles.stotraSanskrit, { color: accentColor }]} numberOfLines={1}>
-          {currentStotra.title_sanskrit}
-        </Text>
-        <Text style={[styles.stotraDeity, { color: theme.textTertiary }]} numberOfLines={1}>
-          {currentStotra.deity?.name_english} · {currentStotra.reciter_name}
-        </Text>
-      </View>
-
-      {/* Script Mode Toggle */}
-      <View style={styles.scriptToggleContainer}>
-        {SCRIPT_OPTIONS.map((opt) => {
-          const isActive = scriptMode === opt.key;
-          return (
-            <TouchableOpacity
-              key={opt.key}
-              onPress={() => setScriptMode(opt.key)}
-              style={[
-                styles.scriptTab,
-                {
-                  backgroundColor: isActive ? `${accentColor}20` : 'transparent',
-                  borderColor: isActive ? accentColor : theme.border,
-                },
-              ]}
-            >
-              <Text style={[
-                styles.scriptTabText,
-                { color: isActive ? accentColor : theme.textTertiary },
-              ]}>
-                {opt.labelShort}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {/* Lyrics / Verses */}
-      <ScrollView
-        style={styles.lyricsScroll}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.lyricsContent}
-      >
-        {currentVerses.length > 0 ? (
-          currentVerses.map((verse, index) => {
-            const isActive = index === activeVerseIndex;
-            return (
-              <TouchableOpacity
-                key={verse.id}
-                activeOpacity={0.7}
-                onPress={() => {
-                  // Tap to seek to this verse
-                  audioService.seekTo(verse.start_time_ms);
-                  usePlayerStore.getState().setActiveVerseIndex(index);
-                }}
-                style={[
-                  styles.verseRow,
-                  {
-                    backgroundColor: isActive ? `${accentColor}10` : 'transparent',
-                    borderLeftColor: isActive ? accentColor : 'transparent',
-                  },
-                ]}
-              >
-                <Text style={[styles.verseNumber, { color: isActive ? accentColor : theme.textMuted }]}>
-                  {verse.verse_number}
+          {/* Controls Area */}
+          <View style={styles.controlsContainer}>
+            
+            <View style={styles.infoRow}>
+              <View style={styles.infoText}>
+                <Text style={[styles.titleText, { color: theme.text, fontFamily: Fonts.serif }]} numberOfLines={1}>
+                  {currentStotra.title_english}
                 </Text>
-                {getVerseDisplay(verse, isActive)}
+                <Text style={[styles.subtitleText, { color: theme.textMuted }]} numberOfLines={1}>
+                  {currentStotra.deity?.name_english || 'Mantra'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => toggleFavorite(currentStotra.id)}>
+                <Heart size={28} color={isFavorite ? theme.accent : theme.textMuted} fill={isFavorite ? theme.accent : 'transparent'} />
               </TouchableOpacity>
-            );
-          })
-        ) : (
-          <View style={styles.noVerses}>
-            <Text style={styles.noVersesEmoji}>📜</Text>
-            <Text style={[styles.noVersesText, { color: theme.textTertiary }]}>
-              Synchronized verses not available yet
-            </Text>
-            <Text style={[styles.noVersesSub, { color: theme.textMuted }]}>
-              Verses will be synced from the Admin Portal
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+            </View>
 
-      {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <Slider
-          style={{ width: '100%', height: 40 }}
-          minimumValue={0}
-          maximumValue={durationMs > 0 ? durationMs : totalDuration * 1000}
-          value={positionMs}
-          minimumTrackTintColor={accentColor}
-          maximumTrackTintColor={theme.surface}
-          thumbTintColor={accentColor}
-          onSlidingComplete={(value) => {
-            audioService.seekTo(value);
-          }}
-        />
-        <View style={styles.timeRow}>
-          <Text style={[styles.timeText, { color: theme.textTertiary }]}>
-            {formatDuration(displayPosition)}
-          </Text>
-          <Text style={[styles.timeText, { color: theme.textTertiary }]}>
-            {formatDuration(displayDuration)}
-          </Text>
-        </View>
-      </View>
-
-      {/* Main Controls */}
-      <View style={styles.controls}>
-        {/* Loop */}
-        <TouchableOpacity onPress={cycleLoop} style={styles.sideControl}>
-          <Ionicons
-            name="repeat"
-            size={20}
-            color={loopMode !== '1x' ? accentColor : theme.textTertiary}
-          />
-          <Text style={[styles.sideControlText, {
-            color: loopMode !== '1x' ? accentColor : theme.textTertiary,
-          }]}>
-            {loopMode === 'infinite' ? '∞' : loopMode}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Previous */}
-        <TouchableOpacity style={styles.navControl}>
-          <Ionicons name="play-skip-back" size={28} color={theme.text} />
-        </TouchableOpacity>
-
-        {/* Play/Pause */}
-        <TouchableOpacity
-          onPress={handleTogglePlay}
-          activeOpacity={0.8}
-        >
-          <LinearGradient
-            colors={[accentColor, SacredColors.saffron[600]]}
-            style={styles.playButton}
-          >
-            <Ionicons
-              name={isPlaying ? 'pause' : 'play'}
-              size={32}
-              color="#FFF"
-              style={isPlaying ? {} : { marginLeft: 3 }}
-            />
-          </LinearGradient>
-        </TouchableOpacity>
-
-        {/* Next */}
-        <TouchableOpacity style={styles.navControl}>
-          <Ionicons name="play-skip-forward" size={28} color={theme.text} />
-        </TouchableOpacity>
-
-        {/* Speed */}
-        <TouchableOpacity onPress={cycleSpeed} style={styles.sideControl}>
-          <MaterialCommunityIcons name="speedometer" size={20} color={playbackSpeed !== 1.0 ? accentColor : theme.textTertiary} />
-          <Text style={[styles.sideControlText, {
-            color: playbackSpeed !== 1.0 ? accentColor : theme.textTertiary,
-          }]}>
-            {playbackSpeed}x
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Bottom Actions */}
-      <View style={styles.bottomActions}>
-        <TouchableOpacity style={styles.bottomAction} onPress={() => toggleFavorite(currentStotra.id)}>
-          <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={22} color={isFavorite ? SacredColors.lotus[500] : theme.textSecondary} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomAction}>
-          <Ionicons name="download-outline" size={22} color={theme.textSecondary} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setShowSleepTimer(!showSleepTimer)}
-          style={styles.bottomAction}
-        >
-          <Ionicons name="moon-outline" size={22} color={theme.textSecondary} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomAction}>
-          <Ionicons name="share-outline" size={22} color={theme.textSecondary} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Sleep Timer Overlay */}
-      {showSleepTimer && (
-        <View style={[styles.sleepOverlay, { backgroundColor: `${theme.background}F5` }]}>
-          <View style={[styles.sleepCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={[styles.sleepTitle, { color: theme.text }]}>🌙 Sleep Timer</Text>
-            {[15, 30, 45, 60].map((mins) => (
-              <TouchableOpacity
-                key={mins}
-                onPress={() => {
-                  usePlayerStore.getState().setSleepTimer(mins);
-                  setShowSleepTimer(false);
+            {/* Slider */}
+            <View style={styles.sliderContainer}>
+              <Slider
+                style={{ width: '100%', height: 40 }}
+                minimumValue={0}
+                maximumValue={durationMs > 0 ? durationMs : totalDuration * 1000}
+                value={positionMs}
+                minimumTrackTintColor={theme.accentBg}
+                maximumTrackTintColor={theme.card}
+                thumbTintColor={theme.accentBg}
+                onSlidingComplete={(value) => {
+                  audioService.seekTo(value);
                 }}
-                style={[styles.sleepOption, { borderColor: theme.border }]}
-              >
-                <Text style={[styles.sleepOptionText, { color: theme.text }]}>{mins} minutes</Text>
+              />
+              <View style={styles.timeRow}>
+                <Text style={[styles.timeText, { color: theme.textMuted }]}>{formatDuration(displayPosition)}</Text>
+                <Text style={[styles.timeText, { color: theme.textMuted }]}>{formatDuration(displayDuration)}</Text>
+              </View>
+            </View>
+
+            {/* Playback Buttons */}
+            <View style={styles.playbackRow}>
+              <TouchableOpacity onPress={cycleLoop}>
+                <Repeat size={24} color={loopMode !== '1x' ? theme.accent : theme.textMuted} />
               </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              onPress={() => {
-                usePlayerStore.getState().setSleepTimer(null);
-                setShowSleepTimer(false);
-              }}
-              style={styles.sleepCancel}
+              
+              <TouchableOpacity onPress={() => audioService.playPrevious()}>
+                <SkipBack size={32} color={theme.text} fill={theme.text} />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                activeOpacity={0.8}
+                onPress={handleTogglePlay}
+                style={[styles.playButtonBig, { backgroundColor: theme.accentBg, shadowColor: theme.accentBg }]}
+              >
+                {isPlaying ? (
+                  <Pause size={32} color={theme.accentText} fill={theme.accentText} />
+                ) : (
+                  <Play size={32} color={theme.accentText} fill={theme.accentText} style={{ marginLeft: 4 }} />
+                )}
+              </TouchableOpacity>
+              
+              <TouchableOpacity onPress={() => audioService.playNext()}>
+                <SkipForward size={32} color={theme.text} fill={theme.text} />
+              </TouchableOpacity>
+              
+              <View style={[styles.loopBadge, { borderColor: theme.border }]}>
+                <Text style={[styles.loopBadgeText, { color: theme.textMuted }]}>{loopMode === 'infinite' ? '∞' : loopMode}</Text>
+              </View>
+            </View>
+
+          </View>
+        </View>
+      ) : (
+        <View style={styles.contentArea}>
+          
+          {/* Verses Scroll */}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.versesContent}
+          >
+            {currentVerses.length > 0 ? (
+              currentVerses.map((verse, index) => {
+                const isActive = index === activeVerseIndex;
+                return (
+                  <TouchableOpacity
+                    key={verse.id}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      audioService.seekTo(verse.start_time_ms);
+                      usePlayerStore.getState().setActiveVerseIndex(index);
+                    }}
+                    style={[
+                      styles.verseRow,
+                      isActive && { transform: [{ scale: 1.05 }] }
+                    ]}
+                  >
+                    <Text style={[
+                      styles.verseText,
+                      { 
+                        color: theme.text, 
+                        fontFamily: Fonts.serif,
+                        opacity: isActive ? 1 : 0.4,
+                        fontSize: isActive ? 24 : 20,
+                        fontWeight: isActive ? '700' : '500',
+                      }
+                    ]}>
+                      {verse.transliteration_iast || verse.sanskrit_text}
+                    </Text>
+                    <Text style={[
+                      styles.verseMeaning,
+                      { 
+                        color: isActive ? theme.accent : theme.textMuted,
+                        opacity: isActive ? 1 : 0.4,
+                        fontSize: isActive ? 16 : 14,
+                      }
+                    ]}>
+                      {verse.meaning_english}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })
+            ) : (
+              <View style={styles.noVerses}>
+                <Text style={{ color: theme.textMuted }}>No verses available.</Text>
+              </View>
+            )}
+          </ScrollView>
+
+          {/* Verses Mini Player */}
+          <View style={[styles.versesMiniPlayer, { backgroundColor: theme.card, borderTopColor: theme.border }]}>
+            <View style={{ flex: 1, marginRight: Spacing.lg }}>
+              <Slider
+                style={{ width: '100%', height: 40 }}
+                minimumValue={0}
+                maximumValue={durationMs > 0 ? durationMs : totalDuration * 1000}
+                value={positionMs}
+                minimumTrackTintColor={theme.accentBg}
+                maximumTrackTintColor={theme.background}
+                thumbTintColor={theme.accentBg}
+                onSlidingComplete={(value) => {
+                  audioService.seekTo(value);
+                }}
+              />
+            </View>
+            <TouchableOpacity 
+              onPress={handleTogglePlay}
+              style={[styles.playButtonSmall, { backgroundColor: theme.accentBg }]}
             >
-              <Text style={[styles.sleepCancelText, { color: theme.textTertiary }]}>Cancel</Text>
+              {isPlaying ? (
+                <Pause size={20} color={theme.accentText} fill={theme.accentText} />
+              ) : (
+                <Play size={20} color={theme.accentText} fill={theme.accentText} style={{ marginLeft: 2 }} />
+              )}
             </TouchableOpacity>
           </View>
+
         </View>
       )}
+
     </View>
   );
 }
@@ -429,270 +285,167 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  bgGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: SCREEN_HEIGHT * 0.4,
-  },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 100,
-    fontSize: FontSizes.lg,
-  },
-
-  // Top Bar
-  topBar: {
+  header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'ios' ? 56 : 40,
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.sm,
+    alignItems: 'center',
+    paddingTop: Platform.OS === 'ios' ? 70 : 50,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.md,
   },
-  topButton: {
+  headerBtn: {
     width: 40,
     height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  topCenter: {
+  headerCenter: {
     alignItems: 'center',
-    gap: 2,
   },
-  topLabel: {
+  headerLabel: {
     fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 1.5,
+    letterSpacing: 2,
     textTransform: 'uppercase',
+    marginBottom: 2,
   },
-  topCategory: {
-    fontSize: FontSizes.sm,
-    fontWeight: '600',
-  },
-
-  // Cover Art
-  coverContainer: {
-    alignItems: 'center',
-    paddingVertical: Spacing.lg,
-  },
-  coverArt: {
-    width: 120,
-    height: 120,
-    borderRadius: BorderRadius['2xl'],
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  coverEmoji: {
-    fontSize: 56,
-  },
-
-  // Title
-  titleContainer: {
-    alignItems: 'center',
-    paddingHorizontal: Spacing['3xl'],
-    gap: 4,
-  },
-  stotraTitle: {
-    fontSize: FontSizes.xl,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  stotraSanskrit: {
-    fontSize: FontSizes.lg,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  stotraDeity: {
-    fontSize: FontSizes.sm,
-    textAlign: 'center',
-  },
-
-  // Script Toggle
-  scriptToggleContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.sm,
-  },
-  scriptTab: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-  },
-  scriptTabText: {
-    fontSize: FontSizes.sm,
-    fontWeight: '600',
-  },
-
-  // Lyrics
-  lyricsScroll: {
-    flex: 1,
-    marginHorizontal: Spacing.lg,
-  },
-  lyricsContent: {
-    paddingVertical: Spacing.sm,
-    gap: Spacing.xs,
-  },
-  verseRow: {
-    flexDirection: 'row',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderLeftWidth: 3,
-    gap: Spacing.md,
-  },
-  verseNumber: {
-    fontSize: FontSizes.xs,
-    fontWeight: '700',
-    width: 18,
-    paddingTop: 3,
-  },
-  verseContent: {
-    flex: 1,
-    gap: 4,
-  },
-  verseSanskrit: {
-    lineHeight: 28,
-  },
-  verseIAST: {
-    lineHeight: 24,
-    fontStyle: 'italic',
-  },
-  verseMeaning: {
-    lineHeight: 20,
-  },
-  verseMeaningHindi: {
-    lineHeight: 18,
-  },
-  noVerses: {
-    alignItems: 'center',
-    paddingVertical: Spacing['4xl'],
-    gap: Spacing.sm,
-  },
-  noVersesEmoji: {
-    fontSize: 40,
-  },
-  noVersesText: {
-    fontSize: FontSizes.md,
+  headerSub: {
+    fontSize: 13,
     fontWeight: '500',
   },
-  noVersesSub: {
-    fontSize: FontSizes.sm,
-    textAlign: 'center',
+  contentArea: {
+    flex: 1,
   },
-
-  // Progress
-  progressContainer: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
+  artworkContainer: {
+    flex: 1,
+    paddingHorizontal: Spacing['2xl'],
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  progressTrack: {
-    height: 4,
-    borderRadius: 2,
-    overflow: 'visible',
-    position: 'relative',
+  artworkWrapper: {
+    width: SCREEN_WIDTH * 0.8,
+    height: SCREEN_WIDTH * 0.8,
+    maxWidth: 360,
+    maxHeight: 360,
+    borderRadius: BorderRadius['3xl'],
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    elevation: 10,
   },
-  progressFill: {
+  artworkImage: {
+    width: '100%',
     height: '100%',
-    borderRadius: 2,
+    resizeMode: 'cover',
   },
-  progressThumb: {
+  artworkGradient: {
     position: 'absolute',
-    top: -4,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginLeft: -6,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '40%',
+  },
+  controlsContainer: {
+    paddingHorizontal: Spacing['2xl'],
+    paddingBottom: Platform.OS === 'ios' ? 60 : 40,
+    paddingTop: Spacing.md,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: Spacing.xl,
+  },
+  infoText: {
+    flex: 1,
+    paddingRight: Spacing.lg,
+  },
+  titleText: {
+    fontSize: 26,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  subtitleText: {
+    fontSize: 15,
+  },
+  sliderContainer: {
+    marginBottom: Spacing.xl,
   },
   timeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 6,
+    marginTop: -8,
   },
   timeText: {
-    fontSize: FontSizes.xs,
+    fontSize: 11,
     fontWeight: '500',
   },
-
-  // Controls
-  controls: {
+  playbackRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.lg,
-    gap: Spacing.xl,
+    paddingHorizontal: Spacing.sm,
   },
-  sideControl: {
-    alignItems: 'center',
-    gap: 2,
-    width: 44,
-  },
-  sideControlText: {
-    fontSize: 9,
-    fontWeight: '700',
-  },
-  navControl: {
-    padding: Spacing.sm,
-  },
-  playButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  playButtonBig: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
   },
-
-  // Bottom Actions
-  bottomActions: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: Spacing['3xl'],
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
-  },
-  bottomAction: {
-    padding: Spacing.sm,
-  },
-
-  // Sleep Timer Overlay
-  sleepOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Spacing['3xl'],
-  },
-  sleepCard: {
-    width: '100%',
-    borderRadius: BorderRadius.xl,
+  loopBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
     borderWidth: 1,
-    padding: Spacing.xl,
-    gap: Spacing.sm,
   },
-  sleepTitle: {
-    fontSize: FontSizes.xl,
+  loopBadgeText: {
+    fontSize: 10,
     fontWeight: '700',
-    textAlign: 'center',
+  },
+  versesContent: {
+    paddingHorizontal: Spacing['2xl'],
+    paddingVertical: Spacing.xl,
+    paddingBottom: 140, // Space for mini player
+  },
+  verseRow: {
+    marginBottom: Spacing['3xl'],
+  },
+  verseText: {
     marginBottom: Spacing.sm,
+    lineHeight: 32,
   },
-  sleepOption: {
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    alignItems: 'center',
-  },
-  sleepOptionText: {
-    fontSize: FontSizes.lg,
+  verseMeaning: {
     fontWeight: '500',
+    lineHeight: 22,
   },
-  sleepCancel: {
-    paddingVertical: Spacing.md,
+  noVerses: {
+    padding: Spacing['3xl'],
     alignItems: 'center',
   },
-  sleepCancelText: {
-    fontSize: FontSizes.md,
-    fontWeight: '600',
+  versesMiniPlayer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    paddingTop: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+  },
+  playButtonSmall: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

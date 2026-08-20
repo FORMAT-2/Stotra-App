@@ -9,19 +9,18 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
-  Animated,
+  Image,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Play, Pause, X } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useSacredTheme } from '../contexts/ThemeContext';
 import { usePlayerStore } from '../store/playerStore';
 import { audioService } from '../services/AudioService';
-import { SacredColors, BorderRadius, Spacing, FontSizes } from '../constants/Theme';
-import { formatDuration } from '../data/mockData';
+import { BorderRadius, Spacing, Fonts } from '../constants/Theme';
+import { getStotraImageSource } from '../data/mockData';
 
 export default function MiniPlayer() {
-  const { theme } = useSacredTheme();
+  const { theme, isDark } = useSacredTheme();
   const router = useRouter();
   const {
     currentStotra,
@@ -36,125 +35,138 @@ export default function MiniPlayer() {
   const progress = durationMs > 0 ? positionMs / durationMs : 0;
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.9}
-      onPress={() => router.push('/player')}
-      style={[styles.container, {
-        backgroundColor: theme.miniPlayer,
-        borderTopColor: theme.miniPlayerBorder,
-        bottom: Platform.OS === 'ios' ? 88 : 65,
-      }]}
-    >
-      {/* Progress bar */}
-      <View style={styles.progressTrack}>
-        <LinearGradient
-          colors={[SacredColors.gold[500], SacredColors.saffron[600]]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.progressFill, { width: `${progress * 100}%` }]}
-        />
-      </View>
+    <View style={[styles.wrapper, { bottom: Platform.OS === 'ios' ? 88 : 65 }]}>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={() => router.push('/player')}
+        style={[styles.container, {
+          backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+          borderColor: theme.border,
+          shadowColor: theme.text,
+        }]}
+      >
+        <View style={styles.content}>
+          
+          <View style={styles.imageRing}>
+            <Image 
+              source={getStotraImageSource(currentStotra)} 
+              style={styles.coverArt} 
+            />
+          </View>
 
-      <View style={styles.content}>
-        {/* Cover art placeholder */}
-        <View style={[styles.coverArt, { backgroundColor: currentStotra.deity?.accent_color || SacredColors.gold[500] }]}>
-          <Text style={styles.coverEmoji}>🪔</Text>
-        </View>
+          <View style={styles.info}>
+            <Text style={[styles.title, { color: theme.text, fontFamily: Fonts.serif }]} numberOfLines={1}>
+              {currentStotra.title_english}
+            </Text>
+            <Text style={[styles.subtitle, { color: theme.textMuted }]} numberOfLines={1}>
+              {currentStotra.deity?.name_english || 'Mantra'}
+            </Text>
+          </View>
 
-        {/* Track info */}
-        <View style={styles.info}>
-          <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
-            {currentStotra.title_english}
-          </Text>
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]} numberOfLines={1}>
-            {currentStotra.title_sanskrit} · {currentStotra.deity?.name_english}
-          </Text>
-        </View>
+          <TouchableOpacity
+            onPress={(e) => {
+              e.stopPropagation?.();
+              if (isPlaying) {
+                audioService.pause();
+              } else {
+                audioService.play();
+              }
+            }}
+            style={[styles.playButton, { backgroundColor: theme.accentBg }]}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            {isPlaying ? (
+               <Pause size={18} color={theme.accentText} fill={theme.accentText} />
+            ) : (
+               <Play size={18} color={theme.accentText} fill={theme.accentText} style={{ marginLeft: 2 }} />
+            )}
+          </TouchableOpacity>
 
-        {/* Controls */}
-        <TouchableOpacity
-          onPress={(e) => {
-            e.stopPropagation?.();
-            if (isPlaying) {
+          <TouchableOpacity
+            onPress={(e) => {
+              e.stopPropagation?.();
               audioService.pause();
-            } else {
-              audioService.play();
-            }
-          }}
-          style={styles.playButton}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <Ionicons
-            name={isPlaying ? 'pause' : 'play'}
-            size={24}
-            color={SacredColors.gold[500]}
-          />
-        </TouchableOpacity>
+              usePlayerStore.getState().reset();
+            }}
+            style={styles.closeButton}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <X size={20} color={theme.textMuted} />
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity
-          onPress={(e) => {
-            e.stopPropagation?.();
-            audioService.pause();
-            usePlayerStore.getState().reset();
-          }}
-          style={styles.closeButton}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <Ionicons name="close" size={20} color={theme.textTertiary} />
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
+        {/* Progress bar */}
+        <View style={[styles.progressTrack, { backgroundColor: 'transparent' }]}>
+          <View
+            style={[styles.progressFill, { width: `${progress * 100}%`, backgroundColor: theme.accentBg }]}
+          />
+        </View>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    borderTopWidth: 1,
+    left: Spacing.lg,
+    right: Spacing.lg,
+    zIndex: 10,
+    marginBottom: Spacing.sm,
+  },
+  container: {
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
     overflow: 'hidden',
-  },
-  progressTrack: {
-    height: 2,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
     gap: Spacing.md,
+  },
+  imageRing: {
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.md,
+    overflow: 'hidden',
   },
   coverArt: {
     width: 44,
     height: 44,
-    borderRadius: BorderRadius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  coverEmoji: {
-    fontSize: 22,
+    resizeMode: 'cover',
   },
   info: {
     flex: 1,
     gap: 2,
   },
   title: {
-    fontSize: FontSizes.md,
+    fontSize: 15,
     fontWeight: '600',
   },
   subtitle: {
-    fontSize: FontSizes.xs,
+    fontSize: 12,
   },
   playButton: {
-    padding: Spacing.xs,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   closeButton: {
     padding: Spacing.xs,
+  },
+  progressTrack: {
+    height: 2,
+    width: '100%',
+  },
+  progressFill: {
+    height: '100%',
   },
 });
