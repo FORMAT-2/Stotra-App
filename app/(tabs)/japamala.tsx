@@ -23,9 +23,11 @@ import { useSettingsStore } from '../../store/settingsStore';
 import { useDataStore } from '../../store/dataStore';
 import { audioService } from '../../services/AudioService';
 import { getStotraImageSource } from '../../data/mockData';
+import { useTranslation } from '../../locales';
 
 export default function JapamalaScreen() {
   const { theme, isDark } = useSacredTheme();
+  const { t } = useTranslation();
   const { dailyTarget: targetCount, setDailyTarget: setTarget } = useSettingsStore();
 
   const {
@@ -120,8 +122,8 @@ export default function JapamalaScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text, fontFamily: Fonts.serif }]}>Japamala</Text>
-        <Text style={[styles.subtitle, { color: theme.textMuted }]}>Digital Counter</Text>
+        <Text style={[styles.title, { color: theme.text, fontFamily: Fonts.serif }]}>{t('japamala')}</Text>
+        <Text style={[styles.subtitle, { color: theme.textMuted }]}>{t('digitalCounter')}</Text>
       </View>
 
       {/* Big Tap Button */}
@@ -143,7 +145,7 @@ export default function JapamalaScreen() {
               {count}
             </Text>
             <Text style={[styles.tapHintText, { color: theme.accentText }]}>
-              {isComplete ? 'COMPLETE' : 'TAP TO CHANT'}
+              {isComplete ? t('complete') : t('tapToChant')}
             </Text>
           </TouchableOpacity>
         </Animated.View>
@@ -178,13 +180,13 @@ export default function JapamalaScreen() {
         <View style={[styles.bentoCard, { backgroundColor: theme.card, shadowColor: theme.text }]}>
           <Flame size={32} color="#F97316" style={{ marginBottom: 8 }} />
           <Text style={[styles.bentoValue, { color: theme.text }]}>{currentStreak}</Text>
-          <Text style={[styles.bentoLabel, { color: theme.textMuted }]}>DAY STREAK</Text>
+          <Text style={[styles.bentoLabel, { color: theme.textMuted }]}>{t('dayStreak')}</Text>
         </View>
 
         <View style={[styles.bentoCard, { backgroundColor: theme.card, shadowColor: theme.text }]}>
           <Target size={32} color={theme.accent} style={{ marginBottom: 8 }} />
           <Text style={[styles.bentoValue, { color: theme.text }]}>{targetCount}</Text>
-          <Text style={[styles.bentoLabel, { color: theme.textMuted }]}>TARGET MALAS</Text>
+          <Text style={[styles.bentoLabel, { color: theme.textMuted }]}>{t('targetMalas')}</Text>
         </View>
       </View>
 
@@ -196,7 +198,7 @@ export default function JapamalaScreen() {
         >
           <Music size={20} color={theme.accent} />
           <Text style={[styles.musicBtnText, { color: theme.text }]}>
-            {selectedStotra ? selectedStotra.title_english : 'Select Background Chant'}
+            {selectedStotra ? selectedStotra.title_english : t('selectBackgroundChant')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -205,7 +207,7 @@ export default function JapamalaScreen() {
       <Modal visible={showMusicModal} animationType="slide" presentationStyle="pageSheet">
         <View style={[styles.modalContainer, { backgroundColor: theme.background }]}>
           <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: theme.text, fontFamily: Fonts.serif }]}>Select Background Chant</Text>
+            <Text style={[styles.modalTitle, { color: theme.text, fontFamily: Fonts.serif }]}>{t('selectBackgroundChant')}</Text>
             <TouchableOpacity onPress={() => setShowMusicModal(false)}>
               <X size={24} color={theme.text} />
             </TouchableOpacity>
@@ -223,7 +225,7 @@ export default function JapamalaScreen() {
               <View style={[styles.stotraImage, { backgroundColor: theme.border, justifyContent: 'center', alignItems: 'center' }]}>
                 <BellOff size={24} color={theme.textMuted} />
               </View>
-              <Text style={{ color: theme.text, fontSize: 16, fontWeight: '500' }}>No Background Music</Text>
+              <Text style={{ color: theme.text, fontSize: 16, fontWeight: '500' }}>{t('noBackgroundMusic')}</Text>
             </TouchableOpacity>
 
             {stotras.map((s) => (

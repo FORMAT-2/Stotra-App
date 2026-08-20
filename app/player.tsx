@@ -12,8 +12,9 @@ import {
   Platform,
   Dimensions,
   Image,
+  Modal,
 } from 'react-native';
-import { ChevronDown, Play, Pause, SkipForward, SkipBack, Heart, Repeat, Share2 } from 'lucide-react-native';
+import { ChevronDown, Play, Pause, SkipForward, SkipBack, Heart, Repeat, Repeat1, Shuffle, Share2, Plus, X, ListMusic } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import Slider from '@react-native-community/slider';
@@ -24,7 +25,9 @@ import { usePlayerStore } from '../store/playerStore';
 import { useFavoritesStore } from '../store/favoritesStore';
 import { audioService } from '../services/AudioService';
 import { formatDuration, getStotraImageSource } from '../data/mockData';
+import { AddToPlaylistModal } from '../components/AddToPlaylistModal';
 import type { LoopMode } from '../data/types';
+import { useTranslation } from '../locales';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const LOOP_OPTIONS: LoopMode[] = ['1x', '3x', '11x', '21x', '108x', 'infinite'];
@@ -32,6 +35,7 @@ const LOOP_OPTIONS: LoopMode[] = ['1x', '3x', '11x', '21x', '108x', 'infinite'];
 export default function PlayerScreen() {
   const { theme, isDark } = useSacredTheme();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const {
     currentStotra,
@@ -40,17 +44,22 @@ export default function PlayerScreen() {
     isPlaying,
     positionMs,
     durationMs,
-    loopMode,
-    setLoopMode,
+    repeatMode,
+    isShuffle,
+    toggleRepeat,
+    toggleShuffle,
+    nextTrack,
+    prevTrack,
   } = usePlayerStore();
 
-  const { favoriteIds, toggleFavorite } = useFavoritesStore();
+  const { favoriteIds } = useFavoritesStore();
   const [showVerses, setShowVerses] = useState(false);
+  const [isPlaylistModalVisible, setIsPlaylistModalVisible] = useState(false);
 
   if (!currentStotra) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: theme.textSecondary }}>No stotra selected</Text>
+        <Text style={{ color: theme.textSecondary }}>{t('noStotraSelected')}</Text>
       </View>
     );
   }
@@ -61,17 +70,7 @@ export default function PlayerScreen() {
   const displayDuration = Math.floor(durationMs > 0 ? durationMs / 1000 : totalDuration);
 
   const handleTogglePlay = () => {
-    if (isPlaying) {
-      audioService.pause();
-    } else {
-      audioService.play();
-    }
-  };
-
-  const cycleLoop = () => {
-    const currentIdx = LOOP_OPTIONS.indexOf(loopMode);
-    const nextIdx = (currentIdx + 1) % LOOP_OPTIONS.length;
-    setLoopMode(LOOP_OPTIONS[nextIdx]);
+    usePlayerStore.getState().togglePlay();
   };
 
   return (
@@ -92,9 +91,9 @@ export default function PlayerScreen() {
           onPress={() => setShowVerses(!showVerses)}
         >
           <Text style={[styles.headerLabel, { color: theme.accent }]}>
-            {showVerses ? 'NOW PLAYING' : 'VERSES'}
+            {showVerses ? t('nowPlaying') : t('verses')}
           </Text>
-          <Text style={[styles.headerSub, { color: theme.text }]}>Tap to toggle</Text>
+          <Text style={[styles.headerSub, { color: theme.text }]}>{t('tapToToggle')}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={[styles.headerBtn, { backgroundColor: theme.card }]}>
@@ -132,7 +131,7 @@ export default function PlayerScreen() {
                   {currentStotra.deity?.name_english || 'Mantra'}
                 </Text>
               </View>
-              <TouchableOpacity onPress={() => toggleFavorite(currentStotra.id)}>
+              <TouchableOpacity onPress={() => setIsPlaylistModalVisible(true)}>
                 <Heart size={28} color={isFavorite ? theme.accent : theme.textMuted} fill={isFavorite ? theme.accent : 'transparent'} />
               </TouchableOpacity>
             </View>
@@ -159,11 +158,11 @@ export default function PlayerScreen() {
 
             {/* Playback Buttons */}
             <View style={styles.playbackRow}>
-              <TouchableOpacity onPress={cycleLoop}>
-                <Repeat size={24} color={loopMode !== '1x' ? theme.accent : theme.textMuted} />
+              <TouchableOpacity onPress={toggleShuffle}>
+                <Shuffle size={24} color={isShuffle ? theme.accent : theme.textMuted} />
               </TouchableOpacity>
               
-              <TouchableOpacity onPress={() => audioService.playPrevious()}>
+              <TouchableOpacity onPress={prevTrack}>
                 <SkipBack size={32} color={theme.text} fill={theme.text} />
               </TouchableOpacity>
               
@@ -179,13 +178,17 @@ export default function PlayerScreen() {
                 )}
               </TouchableOpacity>
               
-              <TouchableOpacity onPress={() => audioService.playNext()}>
+              <TouchableOpacity onPress={nextTrack}>
                 <SkipForward size={32} color={theme.text} fill={theme.text} />
               </TouchableOpacity>
               
-              <View style={[styles.loopBadge, { borderColor: theme.border }]}>
-                <Text style={[styles.loopBadgeText, { color: theme.textMuted }]}>{loopMode === 'infinite' ? '∞' : loopMode}</Text>
-              </View>
+              <TouchableOpacity onPress={toggleRepeat}>
+                {repeatMode === 'one' ? (
+                  <Repeat1 size={24} color={theme.accent} />
+                ) : (
+                  <Repeat size={24} color={repeatMode === 'all' ? theme.accent : theme.textMuted} />
+                )}
+              </TouchableOpacity>
             </View>
 
           </View>
@@ -241,7 +244,7 @@ export default function PlayerScreen() {
               })
             ) : (
               <View style={styles.noVerses}>
-                <Text style={{ color: theme.textMuted }}>No verses available.</Text>
+                <Text style={{ color: theme.textMuted }}>{t('noVerses')}</Text>
               </View>
             )}
           </ScrollView>
@@ -277,6 +280,11 @@ export default function PlayerScreen() {
         </View>
       )}
 
+      <AddToPlaylistModal 
+        visible={isPlaylistModalVisible} 
+        onClose={() => setIsPlaylistModalVisible(false)} 
+        stotra={currentStotra} 
+      />
     </View>
   );
 }

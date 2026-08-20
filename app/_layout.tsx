@@ -10,6 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { SacredThemeProvider, useSacredTheme } from '../contexts/ThemeContext';
+import MiniPlayer from '../components/MiniPlayer';
 
 export {
   ErrorBoundary,
@@ -46,6 +47,7 @@ function RootLayoutNav() {
           }}
         />
       </Stack>
+      <MiniPlayer />
     </>
   );
 }

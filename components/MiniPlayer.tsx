@@ -12,7 +12,7 @@ import {
   Image,
 } from 'react-native';
 import { Play, Pause, X } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, usePathname, useSegments } from 'expo-router';
 import { useSacredTheme } from '../contexts/ThemeContext';
 import { usePlayerStore } from '../store/playerStore';
 import { audioService } from '../services/AudioService';
@@ -29,13 +29,19 @@ export default function MiniPlayer() {
     positionMs,
     durationMs,
   } = usePlayerStore();
+  const pathname = usePathname();
+  const segments = useSegments();
 
-  if (!showMiniPlayer || !currentStotra) return null;
+  if (!showMiniPlayer || !currentStotra || pathname === '/player') return null;
 
   const progress = durationMs > 0 ? positionMs / durationMs : 0;
+  
+  // If we are on a tab screen, float above the tab bar. Otherwise, anchor near the bottom.
+  const isTabBarVisible = segments[0] === '(tabs)';
+  const bottomOffset = isTabBarVisible ? (Platform.OS === 'ios' ? 88 : 65) : 24;
 
   return (
-    <View style={[styles.wrapper, { bottom: Platform.OS === 'ios' ? 88 : 65 }]}>
+    <View style={[styles.wrapper, { bottom: bottomOffset }]}>
       <TouchableOpacity
         activeOpacity={0.9}
         onPress={() => router.push('/player')}

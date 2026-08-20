@@ -7,12 +7,15 @@ import { Spacing, Fonts, BorderRadius } from '../../constants/Theme';
 import { useDataStore } from '../../store/dataStore';
 import { getDeityImageSource, getStotraImageSource } from '../../data/mockData';
 import { audioService } from '../../services/AudioService';
+import { usePlayerStore } from '../../store/playerStore';
+import { useTranslation } from '../../locales';
 
 export default function DeityDetailsScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { theme } = useSacredTheme();
   const router = useRouter();
   const { deities, stotras } = useDataStore();
+  const { t } = useTranslation();
 
   const deity = useMemo(() => deities.find(d => d.slug === slug), [deities, slug]);
   
@@ -22,10 +25,13 @@ export default function DeityDetailsScreen() {
   }, [stotras, deity]);
 
   const handlePlayPress = async (stotra: typeof stotras[0]) => {
-    const { dataService } = await import('../../services/DataService');
-    const verses = await dataService.getVersesForStotra(stotra.id);
-    audioService.playStotra(stotra, verses);
-    router.push('/player');
+    const isAlreadyShowing = usePlayerStore.getState().showMiniPlayer;
+    if (!isAlreadyShowing) {
+      router.push('/player');
+    }
+    
+    const stotraIndex = deityStotras.findIndex(s => s.id === stotra.id);
+    await usePlayerStore.getState().playQueue(deityStotras, Math.max(0, stotraIndex));
   };
 
   if (!deity) {
@@ -33,7 +39,7 @@ export default function DeityDetailsScreen() {
       <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
         <Text style={{ color: theme.text }}>Deity not found</Text>
         <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20 }}>
-          <Text style={{ color: theme.accent }}>Go Back</Text>
+          <Text style={{ color: theme.accent }}>{t('goBack')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -65,7 +71,7 @@ export default function DeityDetailsScreen() {
           </Text>
         </View>
 
-        <Text style={[styles.sectionTitle, { color: theme.textTertiary }]}>SONGS & CHANTS</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textTertiary }]}>{t('songsAndChants').toUpperCase()}</Text>
         
         <View style={styles.resultsList}>
           {deityStotras.length > 0 ? (
@@ -96,7 +102,7 @@ export default function DeityDetailsScreen() {
             ))
           ) : (
             <View style={styles.noResults}>
-              <Text style={{ color: theme.textMuted, fontSize: 16 }}>No chants available for {deity.name_english}.</Text>
+              <Text style={{ color: theme.textMuted, fontSize: 16 }}>{t('noChantsAvailable')}</Text>
             </View>
           )}
         </View>

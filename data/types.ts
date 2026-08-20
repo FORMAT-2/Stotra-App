@@ -38,6 +38,7 @@ export interface Stotra {
   category_id?: string;
   duration_seconds: number;
   audio_url: string;
+  language?: string;
   cover_image_url?: string;
   reciter_name?: string;
   significance_english?: string;
@@ -119,7 +120,7 @@ export interface RecentlyPlayed {
 
 export type ScriptMode = 'devanagari' | 'iast' | 'meaning';
 export type ThemeMode = 'dark' | 'light';
-export type LoopMode = '1x' | '3x' | '11x' | '21x' | '108x' | 'infinite';
+export type RepeatMode = 'off' | 'all' | 'one';
 export type PlaybackSpeed = 0.75 | 1.0 | 1.25 | 1.5;
 
 export const DAY_DEITY_MAP: Record<number, string> = {

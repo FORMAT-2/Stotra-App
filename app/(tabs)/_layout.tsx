@@ -9,7 +9,7 @@ import { BlurView } from 'expo-blur';
 import { Compass, Search, CircleDot, Library, User } from 'lucide-react-native';
 
 import { useSacredTheme } from '../../contexts/ThemeContext';
-import MiniPlayer from '../../components/MiniPlayer';
+import { useTranslation } from '../../locales';
 
 function TabBarIcon({
   IconComponent,
@@ -34,6 +34,7 @@ function TabBarIcon({
 
 export default function TabLayout() {
   const { theme, isDark } = useSacredTheme();
+  const { t } = useTranslation();
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
@@ -66,7 +67,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Home',
+            title: t('home'),
             tabBarIcon: ({ color, focused }) => (
               <TabBarIcon IconComponent={Compass} color={color} focused={focused} theme={theme} />
             ),
@@ -75,7 +76,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="search"
           options={{
-            title: 'Search',
+            title: t('search'),
             tabBarIcon: ({ color, focused }) => (
               <TabBarIcon IconComponent={Search} color={color} focused={focused} theme={theme} />
             ),
@@ -84,7 +85,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="japamala"
           options={{
-            title: 'Japamala',
+            title: t('japamala'),
             tabBarIcon: ({ color, focused }) => (
               <TabBarIcon IconComponent={CircleDot} color={color} focused={focused} theme={theme} />
             ),
@@ -93,7 +94,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="library"
           options={{
-            title: 'Library',
+            title: t('library'),
             tabBarIcon: ({ color, focused }) => (
               <TabBarIcon IconComponent={Library} color={color} focused={focused} theme={theme} />
             ),
@@ -102,14 +103,13 @@ export default function TabLayout() {
         <Tabs.Screen
           name="profile"
           options={{
-            title: 'Profile',
+            title: t('profile'),
             tabBarIcon: ({ color, focused }) => (
               <TabBarIcon IconComponent={User} color={color} focused={focused} theme={theme} />
             ),
           }}
         />
       </Tabs>
-      <MiniPlayer />
     </View>
   );
 }

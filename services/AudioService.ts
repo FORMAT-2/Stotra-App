@@ -3,6 +3,7 @@
 // ============================================================
 
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
+import { Alert } from 'react-native';
 import { usePlayerStore } from '../store/playerStore';
 import type { Stotra, StotraVerse } from '../data/types';
 
@@ -10,6 +11,7 @@ class AudioService {
   private sound: Audio.Sound | null = null;
   private isInitialized = false;
   private statusUpdateInterval: any = null;
+  private loadId = 0;
 
   async init() {
     if (this.isInitialized) return;
@@ -32,6 +34,8 @@ class AudioService {
   }
 
   async load(url: string, autoplay = true) {
+    const currentLoadId = ++this.loadId;
+    
     try {
       if (!this.isInitialized) await this.init();
 
@@ -47,42 +51,66 @@ class AudioService {
         { shouldPlay: autoplay },
         this.onPlaybackStatusUpdate
       );
+      
+      // If another load was triggered while we were waiting, discard this one
+      if (this.loadId !== currentLoadId) {
+        await sound.unloadAsync();
+        return;
+      }
+
       this.sound = sound;
 
       usePlayerStore.getState().setLoading(false);
     } catch (e) {
-      console.error('Failed to load audio', e);
-      usePlayerStore.getState().setLoading(false);
+      if (this.loadId === currentLoadId) {
+        console.error('Failed to load audio', e);
+        usePlayerStore.getState().setLoading(false);
+      }
     }
   }
 
-  async playStotra(stotra: Stotra, verses: StotraVerse[] = []) {
-    const store = usePlayerStore.getState();
-    store.setStotra(stotra, verses);
-    store.setPlaying(true);
-    
-    // Check if we have a local downloaded version
-    const { useDownloadStore } = require('../store/downloadStore');
-    const localUri = useDownloadStore.getState().getLocalUri(stotra.id);
-    
-    const playUrl = localUri || stotra.audio_url;
-    await this.load(playUrl, true);
-  }
+  // Removed playStotra. The store calls load() directly via _setCurrentTrack
 
   async play() {
-    if (this.sound) await this.sound.playAsync();
+    try {
+      if (this.sound) {
+        const status = await this.sound.getStatusAsync();
+        if (status.isLoaded) await this.sound.playAsync();
+      }
+    } catch (e) {
+      console.log('Play ignored:', e);
+    }
   }
 
   async pause() {
-    if (this.sound) await this.sound.pauseAsync();
+    try {
+      if (this.sound) {
+        const status = await this.sound.getStatusAsync();
+        if (status.isLoaded) await this.sound.pauseAsync();
+      }
+    } catch (e) {
+      console.log('Pause ignored:', e);
+    }
   }
 
   async seekTo(positionMs: number) {
-    if (this.sound) await this.sound.setPositionAsync(positionMs);
+    try {
+      if (this.sound) {
+        const status = await this.sound.getStatusAsync();
+        if (status.isLoaded) await this.sound.setPositionAsync(positionMs);
+      }
+    } catch (e) {
+      console.log('Seek ignored:', e);
+    }
   }
 
   async setRate(rate: number) {
-    if (this.sound) await this.sound.setRateAsync(rate, true);
+    try {
+      if (this.sound) {
+        const status = await this.sound.getStatusAsync();
+        if (status.isLoaded) await this.sound.setRateAsync(rate, true);
+      }
+    } catch (e) {}
   }
 
   // Handle status updates from expo-av to sync with our UI store
@@ -121,58 +149,7 @@ class AudioService {
 
   private async handleTrackEnd() {
     const store = usePlayerStore.getState();
-    const nextLoop = store.currentLoop + 1;
-
-    if (store.loopMode === 'infinite' || nextLoop < store.loopCount) {
-      // Loop it
-      store.setCurrentLoop(nextLoop);
-      if (this.sound) await this.sound.replayAsync();
-    } else {
-      // End playback and move to next track if available
-      store.setPlaying(false);
-      store.setPosition(0);
-      store.setCurrentLoop(0);
-      this.playNext();
-    }
-  }
-
-  async playNext() {
-    const store = usePlayerStore.getState();
-    if (!store.currentStotra) return;
-    
-    // Lazy require to avoid cycles
-    const { useDataStore } = require('../store/dataStore');
-    const { dataService } = require('./DataService');
-    const stotras = useDataStore.getState().stotras;
-    
-    const currentIndex = stotras.findIndex((s: any) => s.id === store.currentStotra?.id);
-    if (currentIndex >= 0 && currentIndex < stotras.length - 1) {
-      const nextStotra = stotras[currentIndex + 1];
-      const verses = await dataService.getVersesForStotra(nextStotra.id);
-      this.playStotra(nextStotra, verses);
-    }
-  }
-
-  async playPrevious() {
-    const store = usePlayerStore.getState();
-    if (!store.currentStotra) return;
-
-    // If we're more than 3 seconds in, just restart current track
-    if (store.positionMs > 3000) {
-      this.seekTo(0);
-      return;
-    }
-    
-    const { useDataStore } = require('../store/dataStore');
-    const { dataService } = require('./DataService');
-    const stotras = useDataStore.getState().stotras;
-    
-    const currentIndex = stotras.findIndex((s: any) => s.id === store.currentStotra?.id);
-    if (currentIndex > 0) {
-      const prevStotra = stotras[currentIndex - 1];
-      const verses = await dataService.getVersesForStotra(prevStotra.id);
-      this.playStotra(prevStotra, verses);
-    }
+    await store.nextTrack();
   }
 }
 

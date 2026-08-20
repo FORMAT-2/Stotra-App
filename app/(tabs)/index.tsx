@@ -19,10 +19,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Search, Play } from 'lucide-react-native';
 import { useSacredTheme } from '../../contexts/ThemeContext';
 import { Spacing, BorderRadius, Fonts } from '../../constants/Theme';
-import { audioService } from '../../services/AudioService';
 import { useDataStore } from '../../store/dataStore';
+import { usePlayerStore } from '../../store/playerStore';
 import { getDeityImageSource, getStotraImageSource } from '../../data/mockData';
 import { useRouter } from 'expo-router';
+import { useTranslation } from '../../locales';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.72;
@@ -32,6 +33,7 @@ export default function HomeScreen() {
   const { theme } = useSacredTheme();
   const { deities, stotras, isLoading, fetchData } = useDataStore();
   const router = useRouter();
+  const { t } = useTranslation();
 
   useEffect(() => {
     fetchData();
@@ -40,10 +42,13 @@ export default function HomeScreen() {
   const featuredStotras = useMemo(() => stotras.filter(s => s.is_featured), [stotras]);
 
   const handleStotraPress = async (stotra: typeof stotras[0]) => {
-    const { dataService } = await import('../../services/DataService');
-    const verses = await dataService.getVersesForStotra(stotra.id);
-    audioService.playStotra(stotra, verses);
-    router.push('/player');
+    const isAlreadyShowing = usePlayerStore.getState().showMiniPlayer;
+    if (!isAlreadyShowing) {
+      router.push('/player');
+    }
+    
+    const stotraIndex = featuredStotras.findIndex(s => s.id === stotra.id);
+    await usePlayerStore.getState().playQueue(featuredStotras, Math.max(0, stotraIndex));
   };
 
   if (isLoading && stotras.length === 0) {
@@ -63,7 +68,7 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: theme.text, fontFamily: Fonts.serif }]}>
-            Explore
+            {t('home')}
           </Text>
           <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/search')}>
             <Search size={24} color={theme.text} strokeWidth={2} />
@@ -72,9 +77,9 @@ export default function HomeScreen() {
 
         {/* Deities Section */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: theme.textTertiary }]}>DEITIES</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textTertiary }]}>{t('popularDeities').toUpperCase()}</Text>
           <TouchableOpacity onPress={() => router.push('/deities')}>
-            <Text style={[styles.seeAllText, { color: theme.accent }]}>See all</Text>
+            <Text style={[styles.seeAllText, { color: theme.accent }]}>{t('seeAll')}</Text>
           </TouchableOpacity>
         </View>
         
@@ -104,7 +109,7 @@ export default function HomeScreen() {
 
         {/* Featured Chants Carousel */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: theme.textTertiary }]}>FEATURED CHANTS</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textTertiary }]}>{t('recommendedForYou').toUpperCase()}</Text>
         </View>
         
         <FlatList

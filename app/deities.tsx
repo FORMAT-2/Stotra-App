@@ -6,11 +6,13 @@ import { useSacredTheme } from '../contexts/ThemeContext';
 import { Spacing, Fonts, BorderRadius } from '../constants/Theme';
 import { useDataStore } from '../store/dataStore';
 import { getDeityImageSource } from '../data/mockData';
+import { useTranslation } from '../locales';
 
 export default function DeitiesScreen() {
   const { theme } = useSacredTheme();
   const router = useRouter();
   const { deities } = useDataStore();
+  const { t } = useTranslation();
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -19,7 +21,7 @@ export default function DeitiesScreen() {
           <ArrowLeft size={24} color={theme.text} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.text, fontFamily: Fonts.serif }]}>
-          All Deities
+          {t('allDeities')}
         </Text>
       </View>
 

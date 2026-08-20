@@ -18,18 +18,20 @@ import { useSacredTheme } from '../../contexts/ThemeContext';
 import { Spacing, BorderRadius, Fonts } from '../../constants/Theme';
 import { useAuthStore } from '../../store/authStore';
 import { useRouter } from 'expo-router';
+import { useTranslation } from '../../locales';
 
 export default function ProfileScreen() {
-  const { theme, setTheme } = useSacredTheme();
+  const { theme, setTheme, mode } = useSacredTheme();
   const { user, profile, subscriptionStatus, signOut } = useAuthStore();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const handleSignOut = async () => {
     await signOut();
     router.replace('/auth');
   };
 
-  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Seeker';
+  const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Seeker';
   const displayEmail = user?.email || 'Not signed in';
   const isPremium = subscriptionStatus === 'active';
 
@@ -71,7 +73,7 @@ export default function ProfileScreen() {
               style={[styles.editBtn, { borderColor: theme.border }]}
               onPress={() => router.push('/edit-profile')}
             >
-              <Text style={[styles.editBtnText, { color: theme.text }]}>EDIT PROFILE</Text>
+              <Text style={[styles.editBtnText, { color: theme.text }]}>{t('editProfile')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -86,47 +88,53 @@ export default function ProfileScreen() {
               end={{ x: 1, y: 1 }}
             >
               <Crown size={96} color="#000" opacity={0.1} style={styles.bannerIcon} />
-              <Text style={[styles.bannerTitle, { fontFamily: Fonts.serif }]}>Divine Premium</Text>
-              <Text style={styles.bannerSub}>Unlock all stotras, downloads, and ad-free listening.</Text>
+              <Text style={[styles.bannerTitle, { fontFamily: Fonts.serif }]}>{t('divinePremium')}</Text>
+              <Text style={styles.bannerSub}>{t('unlockPremium')}</Text>
               <View style={styles.bannerBtn}>
-                <Text style={styles.bannerBtnText}>Start 7-Day Free Trial</Text>
+                <Text style={styles.bannerBtnText}>{t('startTrial')}</Text>
               </View>
             </LinearGradient>
           </TouchableOpacity>
         )}
 
         {/* Theme Selection */}
-        <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>THEME</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>{t('theme')}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.themeScroll}>
-          {['dawn', 'dhyana', 'temple', 'bhakti', 'vedic', 'amrit', 'dark'].map((t) => (
-            <TouchableOpacity 
-              key={t}
-              style={[
-                styles.themeChip, 
-                { backgroundColor: theme.card, borderColor: theme.border }
-              ]}
-              onPress={() => setTheme(t as any)}
-            >
-              <Text style={[styles.themeChipText, { color: theme.text }]}>
-                {t.charAt(0).toUpperCase() + t.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {['dawn', 'dhyana', 'temple', 'bhakti', 'vedic', 'amrit', 'dark'].map((t) => {
+            const isSelected = mode === t;
+            return (
+              <TouchableOpacity 
+                key={t}
+                style={[
+                  styles.themeChip, 
+                  { 
+                    backgroundColor: isSelected ? theme.accentBg : theme.card, 
+                    borderColor: isSelected ? theme.accent : theme.border 
+                  }
+                ]}
+                onPress={() => setTheme(t as any)}
+              >
+                <Text style={[styles.themeChipText, { color: isSelected ? theme.accentText : theme.text }]}>
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
 
         {/* Preferences */}
-        <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>PREFERENCES</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>{t('preferences')}</Text>
         <View style={[styles.settingsCard, { backgroundColor: theme.card }]}>
-          {renderSettingRow(Settings, 'General Settings', () => router.push('/settings'))}
-          {renderSettingRow(Crown, 'Subscription', () => router.push('/paywall'))}
+          {renderSettingRow(Settings, t('generalSettings'), () => router.push('/settings'))}
+          {renderSettingRow(Crown, t('subscription'), () => router.push('/paywall'))}
         </View>
 
         {/* Support & About */}
-        <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>SUPPORT & ABOUT</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>{t('supportAbout')}</Text>
         <View style={[styles.settingsCard, { backgroundColor: theme.card }]}>
-          {renderSettingRow(Info, 'About Divine Stotra', () => router.push('/about'))}
-          {renderSettingRow(Star, 'Rate the App', () => {})}
-          {renderSettingRow(Share2, 'Share with Friends', () => {})}
+          {renderSettingRow(Info, t('aboutApp'), () => router.push('/about'))}
+          {renderSettingRow(Star, t('rateApp'), () => {})}
+          {renderSettingRow(Share2, t('shareWithFriends'), () => {})}
         </View>
 
         {/* Sign Out */}
@@ -136,7 +144,7 @@ export default function ProfileScreen() {
           activeOpacity={0.8}
         >
           <LogOut size={20} color="#EF4444" />
-          <Text style={styles.signOutText}>Sign Out</Text>
+          <Text style={styles.signOutText}>{t('signOut')}</Text>
         </TouchableOpacity>
 
       </ScrollView>
